@@ -1,0 +1,66 @@
+package migrations
+
+import (
+	"context"
+)
+
+func init0(s Storage) error {
+	stmt := `
+	BEGIN;
+	CREATE TABLE IF NOT EXISTS migrations (
+	id INTEGER PRIMARY KEY,
+	name TEXT NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP 
+	);
+
+	CREATE TABLE IF NOT EXISTS passwords (
+	id INTEGER PRIMARY KEY,
+	name TEXT NOT NULL UNIQUE,
+	login TEXT,
+	password TEXT NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS cards (
+	id INTEGER PRIMARY KEY,
+	name TEXT NOT NULL UNIQUE,
+	number TEXT NOT NULL UNIQUE,
+	exp_month INTEGER NOT NULL,
+	exp_year INTEGER NOT NULL,
+	cvc_cvv INTEGER,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS texts (
+	id INTEGER PRIMARY KEY,
+	name TEXT NOT NULL UNIQUE,
+	text TEXT INTEGER NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP
+	);
+	
+	CREATE TABLE IF NOT EXISTS binaries (
+	id INTEGER PRIMARY KEY,
+	name TEXT NOT NULL UNIQUE,
+	data BLOB NOT NULL,
+	ext TEXT,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP
+	);
+
+	INSERT INTO migrations (name) VALUES ('init0');
+	COMMIT;
+	`
+	_, err := s.ExecContext(context.Background(), stmt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
