@@ -5,7 +5,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/niksmo/gophkeeper/internal/client/storage/migrations"
-	"github.com/niksmo/gophkeeper/logger"
+	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
 type Storage struct {
