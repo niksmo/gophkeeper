@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,7 +44,7 @@ func TestNew(t *testing.T) {
 func TestMustRun(t *testing.T) {
 	st := NewSuite(t)
 	if os.Getenv("GOPHKEEPER_STORAGETEST_MUSTRUN") == "1" {
-		st.S.MustRun()
+		st.S.MustRun(context.Background())
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestMustRun")

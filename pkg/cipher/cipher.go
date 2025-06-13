@@ -16,35 +16,31 @@ const (
 	iter    = 4096
 )
 
-type Encrypter interface {
-	Encrypt([]byte) []byte
-}
-
-type Decrypter interface {
-	Decrypt([]byte) ([]byte, error)
-}
-
-type encrypter struct {
-	k string
+type Encrypter struct {
 	l logger.Logger
+	k string
 }
 
-func NewEncrypter(logger logger.Logger, key string) Encrypter {
-	return &encrypter{key, logger}
+func NewEncrypter(l logger.Logger) *Encrypter {
+	return &Encrypter{l: l}
 }
 
-func (e *encrypter) Encrypt(data []byte) []byte {
+func (e *Encrypter) SetKey(k string) {
+	e.k = k
+}
+
+func (e *Encrypter) Encrypt(data []byte) []byte {
 	const op = "encrypter.Encrypt"
 	log := e.l.With().Str("op", op).Logger()
 
 	key, err := makeKey(e.k)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Debug().Err(err)
 	}
 
 	aead, err := makeAEAD(key)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Debug().Err(err)
 	}
 
 	nonce := e.getNonce(aead.NonceSize())
@@ -52,27 +48,35 @@ func (e *encrypter) Encrypt(data []byte) []byte {
 	return aead.Seal(nonce, nonce, data, nil)
 }
 
-type decrypter struct {
-	k string
+func (e *Encrypter) getNonce(size int) []byte {
+	return generateRandom(size)
+}
+
+type Decrypter struct {
 	l logger.Logger
+	k string
 }
 
-func NewDecrypter(logger logger.Logger, key string) Decrypter {
-	return &decrypter{key, logger}
+func NewDecrypter(l logger.Logger) *Decrypter {
+	return &Decrypter{l: l}
 }
 
-func (d *decrypter) Decrypt(data []byte) ([]byte, error) {
+func (d *Decrypter) SetKey(k string) {
+	d.k = k
+}
+
+func (d *Decrypter) Decrypt(data []byte) ([]byte, error) {
 	const op = "decrypter.Decrypt"
 	log := d.l.With().Str("op", op).Logger()
 
 	key, err := makeKey(d.k)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Debug().Err(err)
 	}
 
 	aead, err := makeAEAD(key)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Debug().Err(err)
 	}
 
 	nonce, payload := data[:aead.NonceSize()], data[aead.NonceSize():]
@@ -83,10 +87,6 @@ func (d *decrypter) Decrypt(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return decData, nil
-}
-
-func (e *encrypter) getNonce(size int) []byte {
-	return generateRandom(size)
 }
 
 func makeAEAD(key []byte) (cipher.AEAD, error) {

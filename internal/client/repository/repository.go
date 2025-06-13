@@ -1,7 +1,7 @@
 package repository
 
-// import "errors"
+import "errors"
 
-// var (
-// 	Err = errors.New("...")
-// )
+var (
+	ErrExistEntry = errors.New("entry already exists")
+)

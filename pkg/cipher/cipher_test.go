@@ -28,10 +28,10 @@ func getRandPwd(len int) string {
 }
 
 func TestEncrypter(t *testing.T) {
-	password := getRandPwd(100)
 	data := []byte("hello_world")
 
-	e := cipher.NewEncrypter(log, password)
+	e := cipher.NewEncrypter(log)
+	e.SetKey(getRandPwd(100))
 	encryptedData := e.Encrypt(data)
 	require.NotEqual(t, data, encryptedData)
 }
@@ -41,26 +41,28 @@ func TestDecrypter(t *testing.T) {
 		password := getRandPwd(100)
 		data := []byte("hello_world")
 
-		e := cipher.NewEncrypter(log, password)
+		e := cipher.NewEncrypter(log)
+		e.SetKey(password)
 		encryptedData := e.Encrypt(data)
 		require.NotEqual(t, data, encryptedData)
 
-		d := cipher.NewDecrypter(log, password)
+		d := cipher.NewDecrypter(log)
+		d.SetKey(password)
 		decryptedData, err := d.Decrypt(encryptedData)
 		require.NoError(t, err)
 		assert.Equal(t, data, decryptedData)
 	})
 
 	t.Run("InvalidPassword", func(t *testing.T) {
-		password := getRandPwd(100)
 		data := []byte("hello_world")
 
-		e := cipher.NewEncrypter(log, password)
+		e := cipher.NewEncrypter(log)
+		e.SetKey(getRandPwd(100))
 		encryptedData := e.Encrypt(data)
 		require.NotEqual(t, data, encryptedData)
 
-		password = getRandPwd(100)
-		d := cipher.NewDecrypter(log, password)
+		d := cipher.NewDecrypter(log)
+		d.SetKey(getRandPwd(100))
 		decryptedData, err := d.Decrypt(encryptedData)
 		require.Error(t, err)
 		assert.NotEqual(t, data, decryptedData)

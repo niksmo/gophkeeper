@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-var Seq = []func(Storage) error{
+var Seq = []func(context.Context, Storage) error{
 	init0,
 }
 
@@ -15,7 +15,7 @@ type Storage interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
-func GetLastID(s Storage) (int, error) {
+func GetLastID(ctx context.Context, s Storage) (int, error) {
 	const op = "migrations.GetLast"
 	stmt := `
 	SELECT id FROM migrations
@@ -23,7 +23,7 @@ func GetLastID(s Storage) (int, error) {
 	LIMIT 1;
 	`
 
-	r := s.QueryRowContext(context.Background(), stmt)
+	r := s.QueryRowContext(ctx, stmt)
 	var id int
 	err := r.Scan(&id)
 	if err != nil {

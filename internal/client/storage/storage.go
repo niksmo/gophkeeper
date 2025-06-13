@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -13,48 +14,48 @@ type Storage struct {
 	l logger.Logger
 }
 
-func New(logger logger.Logger, dsn string) *Storage {
+func New(l logger.Logger, dsn string) *Storage {
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to open sql db")
+		l.Fatal().Err(err).Msg("failed to open sql db")
 	}
 
 	if err := db.Ping(); err != nil {
-		logger.Fatal().Err(err).Str("dsn", dsn).Msg("failed to ping sql db")
+		l.Fatal().Err(err).Str("dsn", dsn).Msg("failed to ping sql db")
 	}
-	logger.Debug().Msg("database opens successfully")
+	l.Debug().Msg("database opens successfully")
 
-	return &Storage{db, logger}
+	return &Storage{db, l}
 }
 
-func (s *Storage) MustRun() {
-	s.migrate()
+func (s *Storage) MustRun(ctx context.Context) {
+	s.migrate(ctx)
 }
 
-func (s *Storage) migrate() {
-	id := s.lastMigration()
-	s.makeMigrations(id)
+func (s *Storage) migrate(ctx context.Context) {
+	id := s.lastMigrationID(ctx)
+	s.makeMigrations(ctx, id)
 }
 
-func (s *Storage) lastMigration() int {
-	const op = "storage.lastMigration"
+func (s *Storage) lastMigrationID(ctx context.Context) int {
+	const op = "storage.lastMigrationID"
 	log := s.l.With().Str("op", op).Logger()
-	id, err := migrations.GetLastID(s)
+	id, err := migrations.GetLastID(ctx, s)
 	if err != nil {
-		log.Debug().Str("op", op).Err(err).Send()
+		log.Debug().Err(err).Send()
 		return 0
 	}
 	log.Debug().Int("lastID", id).Send()
 	return id
 }
 
-func (s *Storage) makeMigrations(lastID int) {
+func (s *Storage) makeMigrations(ctx context.Context, lastID int) {
 	const op = "storage.makeMigrations"
 	for i, m := range migrations.Seq[lastID:] {
 		log := s.l.With().Str("op", op).Int("migrationID", i).Logger()
 
 		log.Debug().Msg("start migration")
-		if err := m(s); err != nil {
+		if err := m(ctx, s); err != nil {
 			log.Fatal().Err(err).Msg("failed to migrate")
 		}
 		log.Debug().Msg("complete migration")

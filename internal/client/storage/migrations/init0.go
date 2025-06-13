@@ -2,62 +2,58 @@ package migrations
 
 import (
 	"context"
+	"time"
 )
 
-func init0(s Storage) error {
+func init0(ctx context.Context, s Storage) error {
 	stmt := `
 	BEGIN;
 	CREATE TABLE IF NOT EXISTS migrations (
 	id INTEGER PRIMARY KEY,
 	name TEXT NOT NULL,
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP 
+	created_at TIMESTAMP NOT NULL 
 	);
 
 	CREATE TABLE IF NOT EXISTS passwords (
 	id INTEGER PRIMARY KEY,
-	name TEXT NOT NULL UNIQUE,
-	login TEXT,
-	password TEXT NOT NULL,
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMP
+	name TEXT NOT NULL,
+	data BLOB,
+	created_at TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP NOT NULL,
+	deleted BOOLEAN DEFAULT FALSE
 	);
 
 	CREATE TABLE IF NOT EXISTS cards (
 	id INTEGER PRIMARY KEY,
 	name TEXT NOT NULL UNIQUE,
-	number TEXT NOT NULL UNIQUE,
-	exp_month INTEGER NOT NULL,
-	exp_year INTEGER NOT NULL,
-	cvc_cvv INTEGER,
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMP
+	data BLOB,
+	created_at TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP NOT NULL,
+	deleted BOOLEAN DEFAULT FALSE
 	);
 
 	CREATE TABLE IF NOT EXISTS texts (
 	id INTEGER PRIMARY KEY,
 	name TEXT NOT NULL UNIQUE,
-	text TEXT INTEGER NOT NULL,
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMP
+	data BLOB,
+	created_at TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP NOT NULL,
+	deleted BOOLEAN DEFAULT FALSE
 	);
 	
 	CREATE TABLE IF NOT EXISTS binaries (
 	id INTEGER PRIMARY KEY,
 	name TEXT NOT NULL UNIQUE,
-	data BLOB NOT NULL,
-	ext TEXT,
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMP
+	data BLOB,
+	created_at TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP NOT NULL,
+	deleted BOOLEAN DEFAULT FALSE
 	);
 
-	INSERT INTO migrations (name) VALUES ('init0');
+	INSERT INTO migrations (name, created_at) VALUES (?, ?);
 	COMMIT;
 	`
-	_, err := s.ExecContext(context.Background(), stmt)
+	_, err := s.ExecContext(ctx, stmt, "init0", time.Now())
 	if err != nil {
 		return err
 	}
