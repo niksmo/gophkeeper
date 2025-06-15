@@ -31,7 +31,7 @@ type (
 		Add(ctx context.Context, name string, data []byte) (int, error)
 	}
 
-	pwdAddService struct {
+	PwdAddService struct {
 		l         logger.Logger
 		r         pwdAddRepository
 		encoder   encoder
@@ -44,17 +44,17 @@ func NewAddService(
 	repo pwdAddRepository,
 	encoder encoder,
 	encrypter encrypter,
-) *pwdAddService {
-	return &pwdAddService{log, repo, encoder, encrypter}
+) *PwdAddService {
+	return &PwdAddService{log, repo, encoder, encrypter}
 }
 
-func (s *pwdAddService) Add(ctx context.Context, key string, o objects.PWD) (int, error) {
-	const op = "pwdservice.Add"
+func (s *PwdAddService) Add(ctx context.Context, key string, o objects.PWD) (int, error) {
+	const op = "pwdAddService.Add"
 	log := s.l.With().Str("op", op).Logger()
 
 	b, err := s.encoder.Encode(o)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to encode object to bytes")
+		log.Error().Err(err).Msg("failed to encode object in bytes")
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 

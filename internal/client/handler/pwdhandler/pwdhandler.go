@@ -17,17 +17,17 @@ type (
 		Add(ctx context.Context, key string, obj objects.PWD) (int, error)
 	}
 
-	pwdAddHandler struct {
+	PwdAddHandler struct {
 		l logger.Logger
 		s pwdAddService
 	}
 )
 
-func NewAddHandler(l logger.Logger, s pwdAddService) *pwdAddHandler {
-	return &pwdAddHandler{l, s}
+func NewAddHandler(l logger.Logger, s pwdAddService) *PwdAddHandler {
+	return &PwdAddHandler{l, s}
 }
 
-func (h *pwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
+func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
 	const op = "pwdAddHandler.Handle"
 	log := h.l.With().Str("op", op).Logger()
 
@@ -50,7 +50,7 @@ func (h *pwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
 	fmt.Println("Password saved. Entry number:", entryNum)
 }
 
-func (h *pwdAddHandler) getStrFlagValues(
+func (h *PwdAddHandler) getStrFlagValues(
 	v command.ValueGetter,
 ) (k, n, p, l string, errs error) {
 	var err error
