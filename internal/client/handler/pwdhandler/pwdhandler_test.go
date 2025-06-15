@@ -173,6 +173,73 @@ func TestAdd(t *testing.T) {
 		assert.Equal(t, expectedOut, actualOut)
 	})
 
+	t.Run("RequiredFlagsSpaceStr", func(t *testing.T) {
+		var expectedErr error
+		expectedEntryNo := 0
+		masterKey := "      "
+		obj := objects.PWD{
+			Name:     " ",
+			Login:    "",
+			Password: "      ",
+		}
+
+		if os.Getenv("GOPHKEEPER_TEST_PWDADDHDR_REQUIREDFLAGS") == "1" {
+			st := newAddSuite(t, os.Stdout)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.MasterKeyFlag,
+			).Return(masterKey, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.NameFlag,
+			).Return(obj.Name, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.PasswordFlag,
+			).Return(obj.Password, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.LoginFlag,
+			).Return(obj.Login, nil)
+
+			st.service.On(
+				"Add", st.ctx, masterKey, obj,
+			).Return(expectedEntryNo, expectedErr)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+		}
+
+		buf := new(bytes.Buffer)
+		st := newAddSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 1
+		expectedOut := fmt.Sprintf(
+			"required flags are not specified:\n--%s\n--%s\n--%s\n",
+			pwdcommand.MasterKeyFlag,
+			pwdcommand.NameFlag,
+			pwdcommand.PasswordFlag,
+		)
+
+		cmd := exec.Command(
+			os.Args[0], "-test.run=TestAdd/RequiredFlagsNotSpecified",
+		)
+		cmd.Env = append(
+			os.Environ(), "GOPHKEEPER_TEST_PWDADDHDR_REQUIREDFLAGS=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr))
+		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+
 	t.Run("FailedSave", func(t *testing.T) {
 		expectedEntryNo := 0
 		expectedErr := errors.New("something happened with database")

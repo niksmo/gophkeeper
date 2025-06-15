@@ -31,14 +31,15 @@ const (
 	loginUsage     = "account login"
 )
 
-func NewPwdCommand() *cobra.Command {
-	return &cobra.Command{
+func NewPwdCommand() *command.Command {
+	c := &cobra.Command{
 		Use:   "password",
 		Short: "Save accounts data here",
 	}
+	return &command.Command{c}
 }
 
-func NewPwdAddCommand(h command.Handler) *cobra.Command {
+func NewPwdAddCommand(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "add",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -58,5 +59,5 @@ func NewPwdAddCommand(h command.Handler) *cobra.Command {
 	c.MarkFlagRequired(PasswordFlag)
 
 	c.Flags().StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
-	return c
+	return &command.Command{c}
 }

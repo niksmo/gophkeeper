@@ -13,11 +13,10 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
 	"github.com/niksmo/gophkeeper/pkg/logger"
-	"github.com/spf13/cobra"
 )
 
 type App struct {
-	c *cobra.Command
+	c *command.Command
 	s *storage.Storage
 }
 

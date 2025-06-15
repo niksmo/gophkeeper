@@ -14,13 +14,21 @@ type (
 	Handler interface {
 		Handle(context.Context, ValueGetter)
 	}
+
+	Command struct {
+		*cobra.Command
+	}
 )
 
-func NewRootCommand() *cobra.Command {
+func NewRootCommand() *Command {
 	var c = &cobra.Command{
 		Use:   "gophkeeper",
 		Short: "gophkeeper is a reliable storage of your personal data",
 	}
 	c.CompletionOptions.DisableDefaultCmd = true
-	return c
+	return &Command{c}
+}
+
+func (c *Command) AddCommand(subCmd *Command) {
+	c.Command.AddCommand(subCmd.Command)
 }
