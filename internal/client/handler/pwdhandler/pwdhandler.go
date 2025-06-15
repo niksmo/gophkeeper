@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
@@ -20,11 +22,14 @@ type (
 	PwdAddHandler struct {
 		l logger.Logger
 		s pwdAddService
+		w io.Writer
 	}
 )
 
-func NewAddHandler(l logger.Logger, s pwdAddService) *PwdAddHandler {
-	return &PwdAddHandler{l, s}
+func NewAddHandler(
+	l logger.Logger, s pwdAddService, w io.Writer,
+) *PwdAddHandler {
+	return &PwdAddHandler{l, s, w}
 }
 
 func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
@@ -33,7 +38,9 @@ func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
 
 	key, name, password, login, err := h.getStrFlagValues(v)
 	if err != nil {
-		log.Fatal().Err(err).Send()
+		log.Debug().Err(err).Send()
+		fmt.Fprintln(h.w, err.Error())
+		os.Exit(1)
 	}
 
 	o := objects.PWD{
@@ -44,38 +51,50 @@ func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
 
 	entryNum, err := h.s.Add(ctx, key, o)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to save password")
+		log.Debug().Err(err).Msg("failed to save password")
+		fmt.Fprintf(
+			h.w,
+			"the password is not saved, application is crashed: %s\n",
+			err.Error(),
+		)
+		os.Exit(1)
 	}
 
-	fmt.Println("Password saved. Entry number:", entryNum)
+	log.Debug().Int("entry", entryNum).Msg("password saved")
+	fmt.Fprintf(
+		h.w,
+		"the password is saved under the record number: %d\n",
+		entryNum,
+	)
 }
 
 func (h *PwdAddHandler) getStrFlagValues(
 	v command.ValueGetter,
-) (k, n, p, l string, errs error) {
-	var err error
+) (k, n, p, l string, err error) {
+	var errs []error
 	k, err = v.GetString(pwdcommand.MasterKeyFlag)
 	if err != nil || len(strings.TrimSpace(k)) == 0 {
-		errs = errors.Join(
-			fmt.Errorf("--%s flag is required", pwdcommand.MasterKeyFlag),
-		)
+		errs = append(errs, fmt.Errorf("--%s", pwdcommand.MasterKeyFlag))
+
 	}
 
 	n, err = v.GetString(pwdcommand.NameFlag)
 	if err != nil || len(strings.TrimSpace(n)) == 0 {
-		errs = errors.Join(
-			fmt.Errorf("--%s flag is required", pwdcommand.NameFlag),
-		)
+		errs = append(errs, fmt.Errorf("--%s", pwdcommand.NameFlag))
+
 	}
 
 	p, err = v.GetString(pwdcommand.PasswordFlag)
 	if err != nil || len(strings.TrimSpace(p)) == 0 {
-		errs = errors.Join(
-			fmt.Errorf("--%s flag is required", pwdcommand.PasswordFlag),
-		)
+		errs = append(errs, fmt.Errorf("--%s", pwdcommand.PasswordFlag))
 	}
 
 	l, _ = v.GetString(pwdcommand.LoginFlag)
+
+	if len(errs) != 0 {
+		err = errors.Join(errs...)
+		err = fmt.Errorf("required flags are not specified:\n%w", err)
+	}
 
 	return
 }

@@ -31,7 +31,9 @@ func New(logLevel, dsn string) *App {
 	pwdAddService := pwdservice.NewAddService(
 		logger, pwdRepository, encoder, encrypter,
 	)
-	pwdAddHandler := pwdhandler.NewAddHandler(logger, pwdAddService)
+	pwdAddHandler := pwdhandler.NewAddHandler(
+		logger, pwdAddService, os.Stdout,
+	)
 	pwdAddCommand := pwdcommand.NewPwdAddCommand(pwdAddHandler)
 	pwdCommand := pwdcommand.NewPwdCommand()
 	pwdCommand.AddCommand(pwdAddCommand)
