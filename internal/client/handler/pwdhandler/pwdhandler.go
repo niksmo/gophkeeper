@@ -43,18 +43,18 @@ func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		os.Exit(1)
 	}
 
-	o := objects.PWD{
+	obj := objects.PWD{
 		Name:     name,
 		Login:    login,
 		Password: password,
 	}
 
-	entryNum, err := h.s.Add(ctx, key, o)
+	entryNum, err := h.s.Add(ctx, key, obj)
 	if err != nil {
 		log.Debug().Err(err).Msg("failed to save password")
 		fmt.Fprintf(
 			h.w,
-			"the password is not saved, application is crashed: %s\n",
+			"the application completed with an error: %s\n",
 			err.Error(),
 		)
 		os.Exit(1)
