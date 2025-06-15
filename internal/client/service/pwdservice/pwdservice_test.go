@@ -67,21 +67,11 @@ func newAddSuite(t *testing.T) *addSuite {
 	return st
 }
 
-func (st *addSuite) SetT(t *testing.T) {
-	st.t = t
-	st.t.Cleanup(func() {
-		st.encoder.ExpectedCalls = nil
-		st.encrypter.ExpectedCalls = nil
-		st.repo.ExpectedCalls = nil
-	})
-}
-
 func (st *addSuite) PrettyPanic() {
 	prettyPanic(st.t)
 }
 
 func TestAdd(t *testing.T) {
-	st := newAddSuite(t)
 
 	key := "testMasterKey"
 
@@ -95,7 +85,7 @@ func TestAdd(t *testing.T) {
 	encryptedData := []byte("encryptedData")
 
 	t.Run("Ordinary", func(t *testing.T) {
-		st.SetT(t)
+		st := newAddSuite(t)
 		defer st.PrettyPanic()
 
 		var encodeErr error
@@ -115,7 +105,7 @@ func TestAdd(t *testing.T) {
 	})
 
 	t.Run("EncodeFailed", func(t *testing.T) {
-		st.SetT(t)
+		st := newAddSuite(t)
 		defer st.PrettyPanic()
 
 		var repoAddErr error
@@ -135,7 +125,7 @@ func TestAdd(t *testing.T) {
 	})
 
 	t.Run("RepoAddFailed", func(t *testing.T) {
-		st.SetT(t)
+		st := newAddSuite(t)
 		defer st.PrettyPanic()
 
 		var encodeErr error
