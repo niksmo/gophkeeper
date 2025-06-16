@@ -24,14 +24,23 @@ func New(logLevel, dsn string) *App {
 	logger := logger.NewPretty(logLevel)
 	storage := storage.New(logger, dsn)
 	encoder := encode.NewEncoder(logger)
+	decoder := encode.NewDecoder(logger)
 	encrypter := cipher.NewEncrypter(logger)
+	decrypter := cipher.NewDecrypter(logger)
 
 	pwdRepository := pwdrepository.New(logger, storage)
-	pwdAddService := pwdservice.NewAddService(
-		logger, pwdRepository, encoder, encrypter,
+	pwdService := pwdservice.New(
+		logger,
+		pwdRepository,
+		pwdRepository,
+		pwdRepository,
+		encoder,
+		decoder,
+		encrypter,
+		decrypter,
 	)
 	pwdAddHandler := pwdhandler.NewAddHandler(
-		logger, pwdAddService, os.Stdout,
+		logger, pwdService, os.Stdout,
 	)
 	pwdAddCommand := pwdcommand.NewPwdAddCommand(pwdAddHandler)
 

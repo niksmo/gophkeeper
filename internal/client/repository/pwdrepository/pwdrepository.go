@@ -22,8 +22,6 @@ type (
 		l  logger.Logger
 		db storage
 	}
-
-	listItem [2]string
 )
 
 func New(l logger.Logger, db storage) *PwdRepository {
@@ -72,7 +70,7 @@ func (r *PwdRepository) ReadByID(ctx context.Context, id int) ([]byte, error) {
 	return data, nil
 }
 
-func (r *PwdRepository) ListNames(ctx context.Context) ([]listItem, error) {
+func (r *PwdRepository) ListNames(ctx context.Context) ([][2]string, error) {
 	const op = "pwdrepository.ListNames"
 	log := r.l.With().Str("op", op).Logger()
 
@@ -88,7 +86,7 @@ func (r *PwdRepository) ListNames(ctx context.Context) ([]listItem, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	data := make([]listItem, 0)
+	data := make([][2]string, 0)
 	var id int
 	var name string
 	for rows.Next() {
@@ -96,12 +94,12 @@ func (r *PwdRepository) ListNames(ctx context.Context) ([]listItem, error) {
 			log.Error().Err(err).Msg("failed to scan row")
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		item := listItem{strconv.Itoa(id), name}
+		item := [2]string{strconv.Itoa(id), name}
 		data = append(data, item)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Error().Err(err).Msg("failed to select row while iterate rows")
+		log.Error().Err(err).Msg("failed while iterate rows")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 

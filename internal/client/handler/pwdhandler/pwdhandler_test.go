@@ -28,6 +28,11 @@ func (v *valueGetter) GetString(name string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (v *valueGetter) GetInt(name string) (int, error) {
+	args := v.Called(name)
+	return args.Int(0), args.Error(1)
+}
+
 type pwdAddService struct {
 	mock.Mock
 }

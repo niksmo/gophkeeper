@@ -136,6 +136,14 @@ func TestReadByID(t *testing.T) {
 }
 
 func TestListNames(t *testing.T) {
+	type obj struct {
+		name      string
+		data      []byte
+		createdAt time.Time
+		updatedAt time.Time
+		deleted   bool
+	}
+
 	t.Run("Ordinary", func(t *testing.T) {
 		st := newSuite(t)
 		stmt, err := st.s.PrepareContext(
@@ -145,13 +153,6 @@ func TestListNames(t *testing.T) {
 			VALUES (?, ?, ?, ?, ?);`,
 		)
 		require.NoError(t, err)
-		type obj struct {
-			name      string
-			data      []byte
-			createdAt time.Time
-			updatedAt time.Time
-			deleted   bool
-		}
 
 		tNow := time.Now()
 		notDeleted := false
@@ -199,13 +200,6 @@ func TestListNames(t *testing.T) {
 			VALUES (?, ?, ?, ?, ?);`,
 		)
 		require.NoError(t, err)
-		type obj struct {
-			name      string
-			data      []byte
-			createdAt time.Time
-			updatedAt time.Time
-			deleted   bool
-		}
 
 		tNow := time.Now()
 		notDeleted := false
@@ -238,8 +232,6 @@ func TestListNames(t *testing.T) {
 			case 1:
 				assert.Equal(t, "3", id)
 				assert.Equal(t, "B", name)
-			default:
-				t.Fatalf("'i' is can't be more then '1', i: %d\n", i)
 			}
 		}
 	})

@@ -7,8 +7,17 @@ import (
 )
 
 type (
-	ValueGetter interface {
+	IntGetter interface {
+		GetInt(name string) (int, error)
+	}
+
+	StringGetter interface {
 		GetString(name string) (string, error)
+	}
+
+	ValueGetter interface {
+		StringGetter
+		IntGetter
 	}
 
 	Handler interface {

@@ -35,10 +35,6 @@ const (
 	entryNumShorthand = "e"
 	entryNumDefault   = 0
 	entryNumUsage     = "stored account entry number"
-
-	allShorthand = "a"
-	allDefault   = false
-	allUsage     = "show all accounts"
 )
 
 func NewPwdCommand() *command.Command {
@@ -79,11 +75,60 @@ func NewPwdReadCommand(h command.Handler) *command.Command {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
 	}
+	c.Flags().StringP(
+		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
+	)
+	c.MarkFlagRequired(MasterKeyFlag)
 
 	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
-	c.Flags().BoolP(AllFlag, allShorthand, allDefault, allUsage)
-	c.MarkFlagsOneRequired(EntryNumFlag, AllFlag)
-	c.MarkFlagsMutuallyExclusive(EntryNumFlag, AllFlag)
+	c.MarkFlagRequired(EntryNumFlag)
+	return &command.Command{Command: c}
+}
 
+func NewPwdListCommand(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "list",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+	return &command.Command{Command: c}
+}
+
+func NewPwdEditCommand(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "edit",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+
+	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	c.MarkFlagRequired(EntryNumFlag)
+
+	c.Flags().StringP(
+		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
+	)
+	c.MarkFlagRequired(MasterKeyFlag)
+
+	c.Flags().StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
+	c.MarkFlagRequired(NameFlag)
+
+	c.Flags().StringP(PasswordFlag, passwordShorthand, passwordDefault, passwordUsage)
+	c.MarkFlagRequired(PasswordFlag)
+
+	c.Flags().StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+	return &command.Command{Command: c}
+}
+
+func NewPwdDeleteCommand(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "delete",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	c.MarkFlagRequired(EntryNumFlag)
 	return &command.Command{Command: c}
 }
