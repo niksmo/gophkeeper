@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/niksmo/gophkeeper/internal/client/repository"
@@ -21,6 +22,8 @@ type (
 		l  logger.Logger
 		db storage
 	}
+
+	listItem [2]string
 )
 
 func New(l logger.Logger, db storage) *PwdRepository {
@@ -69,7 +72,7 @@ func (r *PwdRepository) ReadByID(ctx context.Context, id int) ([]byte, error) {
 	return data, nil
 }
 
-func (r *PwdRepository) ListNames(ctx context.Context) (map[int]string, error) {
+func (r *PwdRepository) ListNames(ctx context.Context) ([]listItem, error) {
 	const op = "pwdrepository.ListNames"
 	log := r.l.With().Str("op", op).Logger()
 
@@ -85,7 +88,7 @@ func (r *PwdRepository) ListNames(ctx context.Context) (map[int]string, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	data := make(map[int]string)
+	data := make([]listItem, 0)
 	var id int
 	var name string
 	for rows.Next() {
@@ -93,7 +96,8 @@ func (r *PwdRepository) ListNames(ctx context.Context) (map[int]string, error) {
 			log.Error().Err(err).Msg("failed to scan row")
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		data[id] = name
+		item := listItem{strconv.Itoa(id), name}
+		data = append(data, item)
 	}
 
 	if rows.Err() != nil {

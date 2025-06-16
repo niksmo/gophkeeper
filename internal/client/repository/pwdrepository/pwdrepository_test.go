@@ -137,13 +137,111 @@ func TestReadByID(t *testing.T) {
 
 func TestListNames(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
-		//check on all and order by name
+		st := newSuite(t)
+		stmt, err := st.s.PrepareContext(
+			st.ctx,
+			`INSERT INTO
+			  passwords (name, data, created_at, updated_at, deleted)
+			VALUES (?, ?, ?, ?, ?);`,
+		)
+		require.NoError(t, err)
+		type obj struct {
+			name      string
+			data      []byte
+			createdAt time.Time
+			updatedAt time.Time
+			deleted   bool
+		}
 
+		tNow := time.Now()
+		notDeleted := false
+		inserts := []obj{
+			{"A", []byte("A"), tNow, tNow, notDeleted},
+			{"C", []byte("C"), tNow, tNow, notDeleted},
+			{"B", []byte("B"), tNow, tNow, notDeleted},
+		}
+
+		for _, obj := range inserts {
+			stmt.ExecContext(
+				st.ctx,
+				obj.name, obj.data, obj.createdAt, obj.updatedAt, obj.deleted,
+			)
+		}
+		err = stmt.Close()
+		require.NoError(t, err)
+
+		data, err := st.r.ListNames(st.ctx)
+		require.NoError(t, err)
+		require.Len(t, data, len(inserts))
+
+		for i, item := range data {
+			id, name := item[0], item[1]
+			switch i {
+			case 0:
+				assert.Equal(t, "1", id)
+				assert.Equal(t, "A", name)
+			case 1:
+				assert.Equal(t, "3", id)
+				assert.Equal(t, "B", name)
+			case 2:
+				assert.Equal(t, "2", id)
+				assert.Equal(t, "C", name)
+			}
+		}
 	})
 
 	t.Run("HaveDeleted", func(t *testing.T) {
-		// add 3 entries, id=2 set deleted
-		t.Skip()
+		st := newSuite(t)
+		stmt, err := st.s.PrepareContext(
+			st.ctx,
+			`INSERT INTO
+			  passwords (name, data, created_at, updated_at, deleted)
+			VALUES (?, ?, ?, ?, ?);`,
+		)
+		require.NoError(t, err)
+		type obj struct {
+			name      string
+			data      []byte
+			createdAt time.Time
+			updatedAt time.Time
+			deleted   bool
+		}
+
+		tNow := time.Now()
+		notDeleted := false
+		deleted := true
+		inserts := []obj{
+			{"A", []byte("A"), tNow, tNow, notDeleted},
+			{"C", []byte("C"), tNow, tNow, deleted},
+			{"B", []byte("B"), tNow, tNow, notDeleted},
+		}
+
+		for _, obj := range inserts {
+			stmt.ExecContext(
+				st.ctx,
+				obj.name, obj.data, obj.createdAt, obj.updatedAt, obj.deleted,
+			)
+		}
+		err = stmt.Close()
+		require.NoError(t, err)
+
+		data, err := st.r.ListNames(st.ctx)
+		require.NoError(t, err)
+		require.Len(t, data, len(inserts)-1)
+
+		for i, item := range data {
+			id, name := item[0], item[1]
+			switch i {
+			case 0:
+				assert.Equal(t, "1", id)
+				assert.Equal(t, "A", name)
+			case 1:
+				assert.Equal(t, "3", id)
+				assert.Equal(t, "B", name)
+			default:
+				t.Fatalf("'i' is can't be more then '1', i: %d\n", i)
+			}
+		}
 	})
 
 }
