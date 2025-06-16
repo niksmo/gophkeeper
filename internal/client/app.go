@@ -34,6 +34,7 @@ func New(logLevel, dsn string) *App {
 		logger, pwdAddService, os.Stdout,
 	)
 	pwdAddCommand := pwdcommand.NewPwdAddCommand(pwdAddHandler)
+
 	pwdCommand := pwdcommand.NewPwdCommand()
 	pwdCommand.AddCommand(pwdAddCommand)
 

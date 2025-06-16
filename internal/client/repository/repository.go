@@ -3,5 +3,6 @@ package repository
 import "errors"
 
 var (
-	ErrExistEntry = errors.New("entry already exists")
+	ErrAlreadyExist = errors.New("already exists")
+	ErrNotExists    = errors.New("not exists")
 )

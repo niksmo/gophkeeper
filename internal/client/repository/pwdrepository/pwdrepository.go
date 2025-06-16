@@ -3,15 +3,18 @@ package pwdrepository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
 type (
 	storage interface {
 		QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+		QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 	}
 
 	PwdRepository struct {
@@ -43,4 +46,60 @@ func (r *PwdRepository) Add(
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 	return id, nil
+}
+
+func (r *PwdRepository) ReadByID(ctx context.Context, id int) ([]byte, error) {
+	const op = "pwdrepository.ReadByID"
+	log := r.l.With().Str("op", op).Logger()
+
+	stmt := `SELECT data FROM passwords WHERE id=? AND deleted=FALSE;`
+
+	var data []byte
+	err := r.db.QueryRowContext(ctx, stmt, id).Scan(&data)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Debug().Err(err).Msg("password is not exists")
+			return nil, fmt.Errorf("%s: %w", op, repository.ErrNotExists)
+		}
+
+		log.Error().Err(err).Msg("failed to select row")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return data, nil
+}
+
+func (r *PwdRepository) ListNames(ctx context.Context) (map[int]string, error) {
+	const op = "pwdrepository.ListNames"
+	log := r.l.With().Str("op", op).Logger()
+
+	stmt := `
+	SELECT id, name FROM passwords 
+	WHERE deleted=FALSE
+	ORDER BY name ASC;
+	`
+
+	rows, err := r.db.QueryContext(ctx, stmt)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	data := make(map[int]string)
+	var id int
+	var name string
+	for rows.Next() {
+		if err := rows.Scan(&id, &name); err != nil {
+			log.Error().Err(err).Msg("failed to scan row")
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		data[id] = name
+	}
+
+	if rows.Err() != nil {
+		log.Error().Err(err).Msg("failed to select row while iterate rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return data, nil
 }

@@ -29,6 +29,8 @@ func NewRootCommand() *Command {
 	return &Command{c}
 }
 
-func (c *Command) AddCommand(subCmd *Command) {
-	c.Command.AddCommand(subCmd.Command)
+func (c *Command) AddCommand(subCmds ...*Command) {
+	for _, subCmd := range subCmds {
+		c.Command.AddCommand(subCmd.Command)
+	}
 }

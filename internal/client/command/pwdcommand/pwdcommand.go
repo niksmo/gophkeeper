@@ -10,6 +10,8 @@ const (
 	NameFlag      = "name"
 	PasswordFlag  = "password"
 	LoginFlag     = "login"
+	EntryNumFlag  = "entry"
+	AllFlag       = "all"
 )
 
 const (
@@ -29,6 +31,14 @@ const (
 	loginShorthand = "l"
 	loginDefault   = ""
 	loginUsage     = "account login"
+
+	entryNumShorthand = "e"
+	entryNumDefault   = 0
+	entryNumUsage     = "stored account entry number"
+
+	allShorthand = "a"
+	allDefault   = false
+	allUsage     = "show all accounts"
 )
 
 func NewPwdCommand() *command.Command {
@@ -36,7 +46,7 @@ func NewPwdCommand() *command.Command {
 		Use:   "password",
 		Short: "Save accounts data here",
 	}
-	return &command.Command{c}
+	return &command.Command{Command: c}
 }
 
 func NewPwdAddCommand(h command.Handler) *command.Command {
@@ -59,5 +69,21 @@ func NewPwdAddCommand(h command.Handler) *command.Command {
 	c.MarkFlagRequired(PasswordFlag)
 
 	c.Flags().StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
-	return &command.Command{c}
+	return &command.Command{Command: c}
+}
+
+func NewPwdReadCommand(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "read",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+
+	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	c.Flags().BoolP(AllFlag, allShorthand, allDefault, allUsage)
+	c.MarkFlagsOneRequired(EntryNumFlag, AllFlag)
+	c.MarkFlagsMutuallyExclusive(EntryNumFlag, AllFlag)
+
+	return &command.Command{Command: c}
 }
