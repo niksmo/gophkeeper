@@ -70,10 +70,9 @@ func (h *PwdAddHandler) getFlagValues(
 	v command.ValueGetter,
 ) (k, n, p, l string, err error) {
 	var errs []error
-	k, err = v.GetString(pwdcommand.MasterKeyFlag)
-	if err != nil || len(strings.TrimSpace(k)) == 0 {
-		errs = append(errs, fmt.Errorf("--%s", pwdcommand.MasterKeyFlag))
-
+	k, err = getMKey(v)
+	if err != nil {
+		errs = append(errs, err)
 	}
 
 	n, err = v.GetString(pwdcommand.NameFlag)
@@ -144,7 +143,7 @@ func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
 	log.Debug().Int("entry", e).Msg("password readed")
 	fmt.Fprintf(
 		h.w,
-		"the password with entry %d: name=%q, login=%q, password=%q",
+		"the password with entry %d: name=%q, login=%q, password=%q\n",
 		e, obj.Name, obj.Login, obj.Password,
 	)
 
@@ -154,10 +153,9 @@ func (h *PwdReadHandler) getFlagValues(
 	v command.ValueGetter,
 ) (k string, e int, err error) {
 	var errs []error
-	k, err = v.GetString(pwdcommand.MasterKeyFlag)
-	if err != nil || len(strings.TrimSpace(k)) == 0 {
-		errs = append(errs, fmt.Errorf("--%s", pwdcommand.MasterKeyFlag))
-
+	k, err = getMKey(v)
+	if err != nil {
+		errs = append(errs, err)
 	}
 
 	e, err = v.GetInt(pwdcommand.EntryNumFlag)
@@ -168,8 +166,6 @@ func (h *PwdReadHandler) getFlagValues(
 	err = handler.RequiredFlagsErr(errs)
 	return k, e, err
 }
-
-// ==============
 
 type (
 	pwdListService interface {
@@ -201,6 +197,7 @@ func (h *PwdListHandler) Handle(ctx context.Context, v command.ValueGetter) {
 			os.Exit(1)
 		}
 		log.Debug().Err(err).Msg("failed to list password names")
+		handler.InternalError(h.w, err)
 		os.Exit(1)
 	}
 
@@ -212,7 +209,15 @@ func (h *PwdListHandler) printNames(data [][2]string) {
 	var out strings.Builder
 	for _, v := range data {
 		entry, name := v[0], v[1]
-		out.WriteString(fmt.Sprintf("%s: %s", entry, name))
+		out.WriteString(fmt.Sprintf("\n%s: %s", entry, name))
 	}
-	fmt.Fprintf(h.w, "saved passwords names:\n%s\n", out.String())
+	fmt.Fprintf(h.w, "saved passwords names:%s\n", out.String())
+}
+
+func getMKey(v command.ValueGetter) (string, error) {
+	k, err := v.GetString(pwdcommand.MasterKeyFlag)
+	if err != nil || len(strings.TrimSpace(k)) == 0 {
+		return "", fmt.Errorf("--%s", pwdcommand.MasterKeyFlag)
+	}
+	return k, nil
 }
