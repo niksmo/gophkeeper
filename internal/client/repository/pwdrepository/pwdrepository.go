@@ -100,7 +100,7 @@ func (r *PwdRepository) ListNames(ctx context.Context) ([]listItem, error) {
 		data = append(data, item)
 	}
 
-	if rows.Err() != nil {
+	if err := rows.Err(); err != nil {
 		log.Error().Err(err).Msg("failed to select row while iterate rows")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
