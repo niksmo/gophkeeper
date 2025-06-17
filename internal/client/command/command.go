@@ -6,6 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	MasterKeyFlag = "master-key"
+	NameFlag      = "name"
+)
+
 type (
 	IntGetter interface {
 		GetInt(name string) (int, error)

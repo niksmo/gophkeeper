@@ -6,9 +6,12 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
+	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository/pwdrepository"
-	"github.com/niksmo/gophkeeper/internal/client/service/pwdservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/readservice"
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
@@ -29,25 +32,26 @@ func New(logLevel, dsn string) *App {
 	decrypter := cipher.NewDecrypter()
 
 	pwdRepository := pwdrepository.New(logger, storage)
-	pwdService := pwdservice.New(
-		logger,
-		pwdRepository,
-		pwdRepository,
-		pwdRepository,
-		encoder,
-		decoder,
-		encrypter,
-		decrypter,
+
+	pwdAddService := addservice.New[dto.PWD](
+		logger, pwdRepository, encoder, encrypter,
 	)
 	pwdAddHandler := pwdhandler.NewAddHandler(
-		logger, pwdService, os.Stdout,
+		logger, pwdAddService, os.Stdout,
+	)
+
+	pwdReadService := readservice.New[dto.PWD](
+		logger, pwdRepository, decoder, decrypter,
 	)
 	pwdReadHandler := pwdhandler.NewReadHandler(
-		logger, pwdService, os.Stdout,
+		logger, pwdReadService, os.Stdout,
 	)
+
+	pwdListService := listservice.New(logger, pwdRepository)
 	pwdListHandler := pwdhandler.NewListHandler(
-		logger, pwdService, os.Stdout,
+		logger, pwdListService, os.Stdout,
 	)
+
 	pwdAddCommand := pwdcommand.NewPwdAddCommand(pwdAddHandler)
 	pwdReadCommand := pwdcommand.NewPwdReadCommand(pwdReadHandler)
 	pwdListCommand := pwdcommand.NewPwdListCommand(pwdListHandler)

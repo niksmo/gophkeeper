@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
+	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
-	"github.com/niksmo/gophkeeper/internal/client/objects"
-	"github.com/niksmo/gophkeeper/internal/client/service/pwdservice"
+	"github.com/niksmo/gophkeeper/internal/client/service"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -39,9 +39,9 @@ type pwdAddService struct {
 }
 
 func (s *pwdAddService) Add(
-	ctx context.Context, key string, obj objects.PWD,
+	ctx context.Context, key, name string, dto dto.PWD,
 ) (int, error) {
-	args := s.Called(ctx, key, obj)
+	args := s.Called(ctx, key, name, dto)
 	return args.Int(0), args.Error(1)
 }
 
@@ -51,9 +51,9 @@ type pwdReadService struct {
 
 func (s *pwdReadService) Read(
 	ctx context.Context, key string, id int,
-) (objects.PWD, error) {
+) (dto.PWD, error) {
 	args := s.Called(ctx, key, id)
-	return args.Get(0).(objects.PWD), args.Error(1)
+	return args.Get(0).(dto.PWD), args.Error(1)
 }
 
 type pwdListService struct {
@@ -104,7 +104,7 @@ func TestAdd(t *testing.T) {
 
 		masterKey := "testKey"
 
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -126,7 +126,9 @@ func TestAdd(t *testing.T) {
 			"GetString", pwdcommand.LoginFlag,
 		).Return(obj.Login, nil)
 
-		st.service.On("Add", st.ctx, masterKey, obj).Return(expectedEntryNo, expectedErr)
+		st.service.On(
+			"Add", st.ctx, masterKey, obj.Name, obj,
+		).Return(expectedEntryNo, expectedErr)
 
 		st.handler.Handle(st.ctx, st.valueGetter)
 		actualOut := buf.String()
@@ -137,7 +139,7 @@ func TestAdd(t *testing.T) {
 		var expectedErr error
 		expectedEntryNo := 0
 		masterKey := "testKey"
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -163,10 +165,11 @@ func TestAdd(t *testing.T) {
 			).Return(obj.Login, errors.New(""))
 
 			st.service.On(
-				"Add", st.ctx, masterKey, obj,
+				"Add", st.ctx, masterKey, obj.Name, obj,
 			).Return(expectedEntryNo, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -203,7 +206,7 @@ func TestAdd(t *testing.T) {
 		var expectedErr error
 		expectedEntryNo := 0
 		masterKey := "      "
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     " ",
 			Login:    "",
 			Password: "      ",
@@ -229,10 +232,11 @@ func TestAdd(t *testing.T) {
 			).Return(obj.Login, nil)
 
 			st.service.On(
-				"Add", st.ctx, masterKey, obj,
+				"Add", st.ctx, masterKey, obj.Name, obj,
 			).Return(expectedEntryNo, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -269,7 +273,7 @@ func TestAdd(t *testing.T) {
 		expectedEntryNo := 0
 		expectedErr := errors.New("something happened with database")
 		masterKey := "testKey"
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -295,10 +299,11 @@ func TestAdd(t *testing.T) {
 			).Return(obj.Login, nil)
 
 			st.service.On(
-				"Add", st.ctx, masterKey, obj,
+				"Add", st.ctx, masterKey, obj.Name, obj,
 			).Return(expectedEntryNo, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -362,7 +367,7 @@ func TestRead(t *testing.T) {
 
 		key := "testKey"
 		id := 1
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -390,7 +395,7 @@ func TestRead(t *testing.T) {
 		key := "testKey"
 		id := 1
 
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -410,6 +415,7 @@ func TestRead(t *testing.T) {
 			st.service.On("Read", st.ctx, key, id).Return(obj, nil)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -445,7 +451,7 @@ func TestRead(t *testing.T) {
 		key := "    "
 		id := 1
 
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -465,6 +471,7 @@ func TestRead(t *testing.T) {
 			st.service.On("Read", st.ctx, key, id).Return(obj, nil)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -499,7 +506,7 @@ func TestRead(t *testing.T) {
 		key := "testKey"
 		id := 1
 
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -516,9 +523,12 @@ func TestRead(t *testing.T) {
 				"GetInt", pwdcommand.EntryNumFlag,
 			).Return(id, nil)
 
-			st.service.On("Read", st.ctx, key, id).Return(obj, pwdservice.ErrInvalidKey)
+			st.service.On(
+				"Read", st.ctx, key, id,
+			).Return(obj, service.ErrInvalidKey)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -526,7 +536,7 @@ func TestRead(t *testing.T) {
 		defer st.PrettyPanic()
 
 		expectedExitCode := 1
-		expectedOut := fmt.Sprintln(pwdservice.ErrInvalidKey.Error())
+		expectedOut := fmt.Sprintln(service.ErrInvalidKey)
 
 		cmd := exec.Command(
 			os.Args[0], "-test.run=TestRead/InvalidKey",
@@ -550,7 +560,7 @@ func TestRead(t *testing.T) {
 		key := "testKey"
 		id := 1
 
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -569,7 +579,7 @@ func TestRead(t *testing.T) {
 
 			st.service.On(
 				"Read", st.ctx, key, id,
-			).Return(obj, pwdservice.ErrPwdNotExists)
+			).Return(obj, service.ErrNotExists)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
 			return
@@ -580,7 +590,10 @@ func TestRead(t *testing.T) {
 		defer st.PrettyPanic()
 
 		expectedExitCode := 0
-		expectedOut := fmt.Sprintf("%s\nPASS\n", pwdservice.ErrPwdNotExists.Error())
+		expectedOut := fmt.Sprintf(
+			"the password with entry number %d is not exists\nPASS\n",
+			id,
+		)
 
 		cmd := exec.Command(
 			os.Args[0], "-test.run=TestRead/NotExistsPassword",
@@ -603,7 +616,7 @@ func TestRead(t *testing.T) {
 		key := "testKey"
 		id := 1
 
-		obj := objects.PWD{
+		obj := dto.PWD{
 			Name:     "testName",
 			Login:    "testLogin",
 			Password: "testPassword",
@@ -627,6 +640,7 @@ func TestRead(t *testing.T) {
 			).Return(obj, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -710,7 +724,7 @@ func TestList(t *testing.T) {
 
 			st.service.On(
 				"List", st.ctx,
-			).Return(namesSlice, pwdservice.ErrEmptyList)
+			).Return(namesSlice, nil)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
 			return
@@ -720,7 +734,7 @@ func TestList(t *testing.T) {
 		st := newListSuite(t, buf)
 		defer st.PrettyPanic()
 		expectedExitCode := 0
-		expectedOut := fmt.Sprintf("%s\nPASS\n", pwdservice.ErrEmptyList.Error())
+		expectedOut := "there are no saved passwords\nPASS\n"
 
 		cmd := exec.Command(
 			os.Args[0], "-test.run=TestList/EmptyList",
@@ -751,6 +765,7 @@ func TestList(t *testing.T) {
 			).Return(namesSlice, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
@@ -777,7 +792,6 @@ func TestList(t *testing.T) {
 
 		actualOut := buf.String()
 		assert.Equal(t, expectedOut, actualOut)
-
 	})
 }
 

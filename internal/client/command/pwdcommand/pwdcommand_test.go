@@ -70,7 +70,7 @@ func TestAdd(t *testing.T) {
 		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
 	})
 
-	t.Run("MissedRequiredFlag", func(t *testing.T) {
+	t.Run("MissedRequiredFlags", func(t *testing.T) {
 		st := newAddSuite(t)
 		st.SetArgs([]string{
 			"--" + pwdcommand.LoginFlag, "testLogin",
@@ -151,4 +151,96 @@ func TestList(t *testing.T) {
 	st.cmd.ExecuteContext(st.ctx)
 	expectedCalls := 1
 	st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+}
+
+// Test *EditPassword* command
+
+func newEditSuite(t *testing.T) *suite {
+	ctx := context.Background()
+	h := new(handler)
+	cmd := pwdcommand.NewPwdEditCommand(h)
+	args := os.Args
+	t.Cleanup(func() {
+		os.Args = args
+	})
+	st := &suite{ctx, h, cmd}
+	return st
+}
+
+func TestEdit(t *testing.T) {
+	t.Run("Ordinary", func(t *testing.T) {
+		st := newEditSuite(t)
+		st.SetArgs([]string{
+			"--" + pwdcommand.MasterKeyFlag, "testKey",
+			"--" + pwdcommand.NameFlag, "testName",
+			"--" + pwdcommand.PasswordFlag, "testPassword",
+			"--" + pwdcommand.EntryNumFlag, "1",
+			"--" + pwdcommand.LoginFlag, "testLogin",
+		})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 1
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
+
+	t.Run("OnlyRequiredFlags", func(t *testing.T) {
+		st := newEditSuite(t)
+		st.SetArgs([]string{
+			"--" + pwdcommand.MasterKeyFlag, "testKey",
+			"--" + pwdcommand.NameFlag, "testName",
+			"--" + pwdcommand.PasswordFlag, "testPassword",
+			"--" + pwdcommand.EntryNumFlag, "1",
+		})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 1
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
+
+	t.Run("MissedRequiredFlags", func(t *testing.T) {
+		st := newEditSuite(t)
+		st.SetArgs([]string{
+			"--" + pwdcommand.LoginFlag, "testLogin",
+		})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 0
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
+}
+
+// Test *DeletePassword* command
+
+func newDeleteSuite(t *testing.T) *suite {
+	ctx := context.Background()
+	h := new(handler)
+	cmd := pwdcommand.NewPwdDeleteCommand(h)
+	args := os.Args
+	t.Cleanup(func() {
+		os.Args = args
+	})
+	st := &suite{ctx, h, cmd}
+	return st
+}
+
+func TestDelete(t *testing.T) {
+	t.Run("Ordinary", func(t *testing.T) {
+		st := newDeleteSuite(t)
+		st.SetArgs([]string{
+			"--" + pwdcommand.EntryNumFlag, "1",
+		})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 1
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
+
+	t.Run("MissedRequiredFlags", func(t *testing.T) {
+		st := newDeleteSuite(t)
+		st.SetArgs([]string{})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 0
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
 }

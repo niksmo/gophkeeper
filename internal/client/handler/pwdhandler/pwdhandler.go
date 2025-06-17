@@ -10,15 +10,15 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
+	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler"
-	"github.com/niksmo/gophkeeper/internal/client/objects"
-	"github.com/niksmo/gophkeeper/internal/client/service/pwdservice"
+	"github.com/niksmo/gophkeeper/internal/client/service"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
 type (
 	pwdAddService interface {
-		Add(ctx context.Context, key string, obj objects.PWD) (int, error)
+		Add(ctx context.Context, key, name string, obj dto.PWD) (int, error)
 	}
 
 	PwdAddHandler struct {
@@ -35,7 +35,7 @@ func NewAddHandler(
 }
 
 func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
-	const op = "pwdAddHandler.Handle"
+	const op = "PwdAddHandler.Handle"
 	log := h.l.With().Str("op", op).Logger()
 
 	key, name, password, login, err := h.getFlagValues(v)
@@ -45,20 +45,19 @@ func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		os.Exit(1)
 	}
 
-	obj := objects.PWD{
+	obj := dto.PWD{
 		Name:     name,
 		Login:    login,
 		Password: password,
 	}
 
-	entryNum, err := h.s.Add(ctx, key, obj)
+	entryNum, err := h.s.Add(ctx, key, name, obj)
 	if err != nil {
 		log.Debug().Err(err).Msg("failed to save password")
 		handler.InternalError(h.w, err)
 		os.Exit(1)
 	}
 
-	log.Debug().Int("entry", entryNum).Msg("password saved")
 	fmt.Fprintf(
 		h.w,
 		"the password is saved under the record number: %d\n",
@@ -70,13 +69,13 @@ func (h *PwdAddHandler) getFlagValues(
 	v command.ValueGetter,
 ) (k, n, p, l string, err error) {
 	var errs []error
-	k, err = getMKey(v)
+	k, err = handler.GetMasterKeyValue(v)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	n, err = v.GetString(pwdcommand.NameFlag)
-	if err != nil || len(strings.TrimSpace(n)) == 0 {
+	n, err = handler.GetNameValue(v)
+	if err != nil {
 		errs = append(errs, fmt.Errorf("--%s", pwdcommand.NameFlag))
 
 	}
@@ -95,7 +94,7 @@ func (h *PwdAddHandler) getFlagValues(
 
 type (
 	pwdReadService interface {
-		Read(ctx context.Context, key string, id int) (objects.PWD, error)
+		Read(ctx context.Context, key string, id int) (dto.PWD, error)
 	}
 
 	PwdReadHandler struct {
@@ -112,7 +111,7 @@ func NewReadHandler(
 }
 
 func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
-	const op = "pwdReadHandler.Handle"
+	const op = "PwdReadHandler.Handle"
 	log := h.l.With().Str("op", op).Logger()
 
 	k, e, err := h.getFlagValues(v)
@@ -124,12 +123,16 @@ func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
 
 	obj, err := h.s.Read(ctx, k, e)
 	if err != nil {
-		if errors.Is(err, pwdservice.ErrPwdNotExists) {
+		if errors.Is(err, service.ErrNotExists) {
 			log.Debug().Err(err).Int("id", e).Msg("not exists")
-			fmt.Fprintln(h.w, err.Error())
+			fmt.Fprintf(
+				h.w,
+				"the password with entry number %d is not exists\n",
+				e,
+			)
 			return
 		}
-		if errors.Is(err, pwdservice.ErrInvalidKey) {
+		if errors.Is(err, service.ErrInvalidKey) {
 			log.Debug().Err(err).Msg("invalid key")
 			fmt.Fprintln(h.w, err.Error())
 			os.Exit(1)
@@ -140,7 +143,6 @@ func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		os.Exit(1)
 	}
 
-	log.Debug().Int("entry", e).Msg("password readed")
 	fmt.Fprintf(
 		h.w,
 		"the password with entry %d: name=%q, login=%q, password=%q\n",
@@ -153,7 +155,7 @@ func (h *PwdReadHandler) getFlagValues(
 	v command.ValueGetter,
 ) (k string, e int, err error) {
 	var errs []error
-	k, err = getMKey(v)
+	k, err = handler.GetMasterKeyValue(v)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -186,38 +188,28 @@ func NewListHandler(
 }
 
 func (h *PwdListHandler) Handle(ctx context.Context, v command.ValueGetter) {
-	const op = "pwdListHandler.Handle"
+	const op = "PwdListHandler.Handle"
 	log := h.l.With().Str("op", op).Logger()
 
-	entrysNames, err := h.s.List(ctx)
+	idNamePairs, err := h.s.List(ctx)
 	if err != nil {
-		if errors.Is(err, pwdservice.ErrEmptyList) {
-			log.Debug().Msg("empty password names list")
-			fmt.Fprintln(h.w, err.Error())
-			return
-		}
 		log.Debug().Err(err).Msg("failed to list password names")
 		handler.InternalError(h.w, err)
 		os.Exit(1)
 	}
-
-	log.Debug().Msg("password names list printed")
-	h.printNames(entrysNames)
+	h.printOut(idNamePairs)
 
 }
-func (h *PwdListHandler) printNames(data [][2]string) {
+func (h *PwdListHandler) printOut(data [][2]string) {
+	if len(data) == 0 {
+		fmt.Fprintln(h.w, "there are no saved passwords")
+		return
+	}
+
 	var out strings.Builder
 	for _, v := range data {
 		entry, name := v[0], v[1]
 		out.WriteString(fmt.Sprintf("\n%s: %s", entry, name))
 	}
 	fmt.Fprintf(h.w, "saved passwords names:%s\n", out.String())
-}
-
-func getMKey(v command.ValueGetter) (string, error) {
-	k, err := v.GetString(pwdcommand.MasterKeyFlag)
-	if err != nil || len(strings.TrimSpace(k)) == 0 {
-		return "", fmt.Errorf("--%s", pwdcommand.MasterKeyFlag)
-	}
-	return k, nil
 }

@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	MasterKeyFlag = "master-key"
-	NameFlag      = "name"
+	MasterKeyFlag = command.MasterKeyFlag
+	NameFlag      = command.NameFlag
 	PasswordFlag  = "password"
 	LoginFlag     = "login"
 	EntryNumFlag  = "entry"
@@ -103,9 +103,6 @@ func NewPwdEditCommand(h command.Handler) *command.Command {
 		},
 	}
 
-	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
-	c.MarkFlagRequired(EntryNumFlag)
-
 	c.Flags().StringP(
 		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
 	)
@@ -116,6 +113,9 @@ func NewPwdEditCommand(h command.Handler) *command.Command {
 
 	c.Flags().StringP(PasswordFlag, passwordShorthand, passwordDefault, passwordUsage)
 	c.MarkFlagRequired(PasswordFlag)
+
+	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	c.MarkFlagRequired(EntryNumFlag)
 
 	c.Flags().StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
 	return &command.Command{Command: c}
