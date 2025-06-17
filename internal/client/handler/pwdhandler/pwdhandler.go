@@ -17,19 +17,27 @@ import (
 )
 
 type (
-	pwdAddService interface {
+	addService interface {
 		Add(ctx context.Context, key, name string, obj dto.PWD) (int, error)
 	}
 
-	PwdAddHandler struct {
-		l logger.Logger
-		s pwdAddService
-		w io.Writer
+	readService interface {
+		Read(ctx context.Context, key string, id int) (dto.PWD, error)
+	}
+
+	listService interface {
+		List(context.Context) ([][2]string, error)
 	}
 )
 
+type PwdAddHandler struct {
+	l logger.Logger
+	s addService
+	w io.Writer
+}
+
 func NewAddHandler(
-	l logger.Logger, s pwdAddService, w io.Writer,
+	l logger.Logger, s addService, w io.Writer,
 ) *PwdAddHandler {
 	return &PwdAddHandler{l, s, w}
 }
@@ -58,11 +66,7 @@ func (h *PwdAddHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(
-		h.w,
-		"the password is saved under the record number: %d\n",
-		entryNum,
-	)
+	h.printOut(entryNum)
 }
 
 func (h *PwdAddHandler) getFlagValues(
@@ -92,20 +96,22 @@ func (h *PwdAddHandler) getFlagValues(
 	return k, n, p, l, err
 }
 
-type (
-	pwdReadService interface {
-		Read(ctx context.Context, key string, id int) (dto.PWD, error)
-	}
+func (h *PwdAddHandler) printOut(entryNum int) {
+	fmt.Fprintf(
+		h.w,
+		"the password is saved under the record number: %d\n",
+		entryNum,
+	)
+}
 
-	PwdReadHandler struct {
-		l logger.Logger
-		s pwdReadService
-		w io.Writer
-	}
-)
+type PwdReadHandler struct {
+	l logger.Logger
+	s readService
+	w io.Writer
+}
 
 func NewReadHandler(
-	l logger.Logger, s pwdReadService, w io.Writer,
+	l logger.Logger, s readService, w io.Writer,
 ) *PwdReadHandler {
 	return &PwdReadHandler{l, s, w}
 }
@@ -143,12 +149,7 @@ func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(
-		h.w,
-		"the password with entry %d: name=%q, login=%q, password=%q\n",
-		e, obj.Name, obj.Login, obj.Password,
-	)
-
+	h.printOut(e, obj)
 }
 
 func (h *PwdReadHandler) getFlagValues(
@@ -169,20 +170,22 @@ func (h *PwdReadHandler) getFlagValues(
 	return k, e, err
 }
 
-type (
-	pwdListService interface {
-		List(context.Context) ([][2]string, error)
-	}
+func (h *PwdReadHandler) printOut(entryNum int, obj dto.PWD) {
+	fmt.Fprintf(
+		h.w,
+		"the password with entry %d: name=%q, login=%q, password=%q\n",
+		entryNum, obj.Name, obj.Login, obj.Password,
+	)
+}
 
-	PwdListHandler struct {
-		l logger.Logger
-		s pwdListService
-		w io.Writer
-	}
-)
+type PwdListHandler struct {
+	l logger.Logger
+	s listService
+	w io.Writer
+}
 
 func NewListHandler(
-	l logger.Logger, s pwdListService, w io.Writer,
+	l logger.Logger, s listService, w io.Writer,
 ) *PwdListHandler {
 	return &PwdListHandler{l, s, w}
 }
