@@ -235,5 +235,96 @@ func TestListNames(t *testing.T) {
 			}
 		}
 	})
+}
 
+func TestUpdate(t *testing.T) {
+	t.Run("Ordinary", func(t *testing.T) {
+		st := newSuite(t)
+
+		insertName := "insertName"
+		insertData := []byte("insertData")
+		insertTime := time.Now()
+		_, err := st.s.ExecContext(st.ctx,
+			`
+			INSERT INTO passwords (name, data, created_at, updated_at)
+			VALUES
+			  (?, ?, ?, ?);
+			`,
+			insertName, insertData, insertTime, insertTime,
+		)
+		require.NoError(t, err)
+
+		entryNum := 1
+		updateName := "updateName"
+		updateData := []byte("updateData")
+		err = st.r.Update(st.ctx, entryNum, updateName, updateData)
+		require.NoError(t, err)
+
+		var actualName string
+		var actualData []byte
+		var actualUpdatedAt time.Time
+
+		err = st.s.QueryRowContext(
+			st.ctx, `SELECT name, data, updated_at FROM passwords WHERE id=1;`,
+		).Scan(&actualName, &actualData, &actualUpdatedAt)
+		require.NoError(t, err)
+		assert.Equal(t, updateName, actualName)
+		assert.Equal(t, updateData, actualData)
+		assert.Less(t, insertTime, actualUpdatedAt)
+	})
+
+	t.Run("NotExistsEntry", func(t *testing.T) {
+		st := newSuite(t)
+		entryNum := 1
+		updateName := "updateName"
+		updateData := []byte("updateData")
+		err := st.r.Update(st.ctx, entryNum, updateName, updateData)
+		assert.ErrorIs(t, err, repository.ErrNotExists)
+	})
+}
+
+func TestDelete(t *testing.T) {
+	t.Run("Ordinary", func(t *testing.T) {
+		st := newSuite(t)
+
+		insertName := "insertName"
+		insertData := []byte("insertData")
+		insertTime := time.Now()
+		_, err := st.s.ExecContext(st.ctx,
+			`
+			INSERT INTO passwords (name, data, created_at, updated_at)
+			VALUES
+			  (?, ?, ?, ?);
+			`,
+			insertName, insertData, insertTime, insertTime,
+		)
+		require.NoError(t, err)
+
+		entryNum := 1
+		err = st.r.Delete(st.ctx, entryNum)
+		require.NoError(t, err)
+
+		var actualName string
+		var actualData []byte
+		var actualUpdatedAt time.Time
+		var actualDeleted bool
+		err = st.s.QueryRowContext(
+			st.ctx, `SELECT name, data, updated_at, deleted FROM passwords WHERE id=1;`,
+		).Scan(&actualName, &actualData, &actualUpdatedAt, &actualDeleted)
+		require.NoError(t, err)
+
+		var expectedData []byte
+		var expectedName string
+		assert.Equal(t, expectedName, actualName)
+		assert.Equal(t, expectedData, actualData)
+		assert.True(t, actualDeleted)
+		assert.Less(t, insertTime, actualUpdatedAt)
+	})
+
+	t.Run("NotExistsEntry", func(t *testing.T) {
+		st := newSuite(t)
+		entryNum := 1
+		err := st.r.Delete(st.ctx, entryNum)
+		assert.ErrorIs(t, err, repository.ErrNotExists)
+	})
 }

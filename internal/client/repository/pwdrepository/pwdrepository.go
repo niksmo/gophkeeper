@@ -31,7 +31,7 @@ func New(l logger.Logger, db storage) *PwdRepository {
 func (r *PwdRepository) Add(
 	ctx context.Context, name string, data []byte,
 ) (int, error) {
-	const op = "pwdrepository.Add"
+	const op = "PwdRepository.Add"
 	log := r.l.With().Str("op", op).Logger()
 
 	stmt := `
@@ -50,7 +50,7 @@ func (r *PwdRepository) Add(
 }
 
 func (r *PwdRepository) ReadByID(ctx context.Context, id int) ([]byte, error) {
-	const op = "pwdrepository.ReadByID"
+	const op = "PwdRepository.ReadByID"
 	log := r.l.With().Str("op", op).Logger()
 
 	stmt := `SELECT data FROM passwords WHERE id=? AND deleted=FALSE;`
@@ -71,7 +71,7 @@ func (r *PwdRepository) ReadByID(ctx context.Context, id int) ([]byte, error) {
 }
 
 func (r *PwdRepository) ListNames(ctx context.Context) ([][2]string, error) {
-	const op = "pwdrepository.ListNames"
+	const op = "PwdRepository.ListNames"
 	log := r.l.With().Str("op", op).Logger()
 
 	stmt := `
@@ -104,4 +104,57 @@ func (r *PwdRepository) ListNames(ctx context.Context) ([][2]string, error) {
 	}
 
 	return data, nil
+}
+
+func (r *PwdRepository) Update(
+	ctx context.Context, entryNum int, name string, data []byte,
+) error {
+	const op = "PwdRepository.Update"
+	log := r.l.With().Str("op", op).Logger()
+
+	stmt := `
+	UPDATE passwords
+	SET
+	  name=?, data=?, updated_at=?
+	WHERE id=?
+	RETURNING id;
+	`
+	var id int
+	err := r.db.QueryRowContext(
+		ctx, stmt, name, data, time.Now(), entryNum,
+	).Scan(&id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Debug().Err(err).Msg("password is not exists")
+			return fmt.Errorf("%s: %w", op, repository.ErrNotExists)
+		}
+		log.Error().Err(err).Msg("failed to update")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+}
+
+func (r PwdRepository) Delete(ctx context.Context, entryNum int) error {
+	const op = "PwdRepository.Delete"
+	log := r.l.With().Str("op", op).Logger()
+
+	stmt := `
+	UPDATE passwords
+	SET
+	  name='', data=NULL, updated_at=?, deleted=TRUE
+	WHERE id=?
+	RETURNING id;
+	`
+	var id int
+	err := r.db.QueryRowContext(ctx, stmt, time.Now(), entryNum).Scan(&id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Debug().Err(err).Msg("password is not exists")
+			return fmt.Errorf("%s: %w", op, repository.ErrNotExists)
+		}
+		log.Error().Err(err).Msg("failed to delete")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+
 }
