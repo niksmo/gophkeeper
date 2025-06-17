@@ -10,34 +10,36 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type addHandler struct {
+type handler struct {
 	mock.Mock
 }
 
-func (h *addHandler) Handle(ctx context.Context, v command.ValueGetter) {
+func (h *handler) Handle(ctx context.Context, v command.ValueGetter) {
 	h.Called(ctx, v)
 }
 
-type addSuite struct {
+type suite struct {
 	ctx context.Context
-	h   *addHandler
+	h   *handler
 	cmd *command.Command
 }
 
-func newAddSuite(t *testing.T) *addSuite {
+func (st *suite) SetArgs(args []string) {
+	os.Args = append(os.Args[:1], args...)
+}
+
+// Test *AddPassword* command
+
+func newAddSuite(t *testing.T) *suite {
 	ctx := context.Background()
-	h := new(addHandler)
+	h := new(handler)
 	cmd := pwdcommand.NewPwdAddCommand(h)
 	args := os.Args
 	t.Cleanup(func() {
 		os.Args = args
 	})
-	st := &addSuite{ctx, h, cmd}
+	st := &suite{ctx, h, cmd}
 	return st
-}
-
-func (st *addSuite) SetArgs(args []string) {
-	os.Args = append(os.Args[:1], args...)
 }
 
 func TestAdd(t *testing.T) {
@@ -71,8 +73,6 @@ func TestAdd(t *testing.T) {
 	t.Run("MissedRequiredFlag", func(t *testing.T) {
 		st := newAddSuite(t)
 		st.SetArgs([]string{
-			"--" + pwdcommand.MasterKeyFlag, "testKey",
-			"--" + pwdcommand.NameFlag, "testName",
 			"--" + pwdcommand.LoginFlag, "testLogin",
 		})
 		st.h.On("Handle", st.ctx, st.cmd.Flags())
@@ -80,4 +80,75 @@ func TestAdd(t *testing.T) {
 		expectedCalls := 0
 		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
 	})
+}
+
+// Test *ReadPassword* command
+
+func newReadSuite(t *testing.T) *suite {
+	ctx := context.Background()
+	h := new(handler)
+	cmd := pwdcommand.NewPwdReadCommand(h)
+	args := os.Args
+	t.Cleanup(func() {
+		os.Args = args
+	})
+	st := &suite{ctx, h, cmd}
+	return st
+}
+
+func TestRead(t *testing.T) {
+	t.Run("Ordinary", func(t *testing.T) {
+		st := newReadSuite(t)
+		st.SetArgs([]string{
+			"--" + pwdcommand.MasterKeyFlag, "testKey",
+			"--" + pwdcommand.EntryNumFlag, "1",
+		})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 1
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
+
+	t.Run("MissedRequiredFlag", func(t *testing.T) {
+		st := newReadSuite(t)
+		st.SetArgs([]string{})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 0
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
+
+	t.Run("MissedEntryNumFlag", func(t *testing.T) {
+		st := newReadSuite(t)
+		st.SetArgs([]string{
+			"--" + pwdcommand.MasterKeyFlag, "testKey",
+		})
+		st.h.On("Handle", st.ctx, st.cmd.Flags())
+		st.cmd.ExecuteContext(st.ctx)
+		expectedCalls := 0
+		st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
+	})
+}
+
+// Test *ListPassword* command
+
+func newListSuite(t *testing.T) *suite {
+	ctx := context.Background()
+	h := new(handler)
+	cmd := pwdcommand.NewPwdListCommand(h)
+	args := os.Args
+	t.Cleanup(func() {
+		os.Args = args
+	})
+	st := &suite{ctx, h, cmd}
+	return st
+}
+
+func TestList(t *testing.T) {
+	st := newListSuite(t)
+	st.SetArgs([]string{})
+	st.h.On("Handle", st.ctx, st.cmd.Flags())
+	st.cmd.ExecuteContext(st.ctx)
+	expectedCalls := 1
+	st.h.AssertNumberOfCalls(t, "Handle", expectedCalls)
 }
