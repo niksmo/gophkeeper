@@ -572,14 +572,15 @@ func TestRead(t *testing.T) {
 			).Return(obj, pwdservice.ErrPwdNotExists)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
 		st := newReadSuite(t, buf)
 		defer st.PrettyPanic()
 
-		expectedExitCode := 1
-		expectedOut := fmt.Sprintln(pwdservice.ErrPwdNotExists.Error())
+		expectedExitCode := 0
+		expectedOut := fmt.Sprintf("%s\nPASS\n", pwdservice.ErrPwdNotExists.Error())
 
 		cmd := exec.Command(
 			os.Args[0], "-test.run=TestRead/NotExistsPassword",
@@ -591,9 +592,8 @@ func TestRead(t *testing.T) {
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = buf
 		err := cmd.Run()
-		var exitErr *exec.ExitError
-		require.True(t, errors.As(err, &exitErr))
-		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+		require.NoError(t, err)
+		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
 
 		actualOut := buf.String()
 		assert.Equal(t, expectedOut, actualOut)
@@ -713,13 +713,14 @@ func TestList(t *testing.T) {
 			).Return(namesSlice, pwdservice.ErrEmptyList)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
+			return
 		}
 
 		buf := new(bytes.Buffer)
 		st := newListSuite(t, buf)
 		defer st.PrettyPanic()
-		expectedExitCode := 1
-		expectedOut := fmt.Sprintln(pwdservice.ErrEmptyList)
+		expectedExitCode := 0
+		expectedOut := fmt.Sprintf("%s\nPASS\n", pwdservice.ErrEmptyList.Error())
 
 		cmd := exec.Command(
 			os.Args[0], "-test.run=TestList/EmptyList",
@@ -730,9 +731,8 @@ func TestList(t *testing.T) {
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = buf
 		err := cmd.Run()
-		var exitErr *exec.ExitError
-		require.True(t, errors.As(err, &exitErr))
-		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+		require.NoError(t, err)
+		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
 
 		actualOut := buf.String()
 		assert.Equal(t, expectedOut, actualOut)

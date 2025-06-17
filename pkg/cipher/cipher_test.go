@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/niksmo/gophkeeper/pkg/cipher"
-	"github.com/niksmo/gophkeeper/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +15,6 @@ var (
 		`qwertyuiopasdfghjklzxcvbnm` +
 		`QWERTYUIOPASDFGHJKLZXCVBNM`)
 	alen = len(alphabet)
-	log  = logger.NewPretty("debug")
 )
 
 func getRandPwd(len int) string {
@@ -30,7 +28,7 @@ func getRandPwd(len int) string {
 func TestEncrypter(t *testing.T) {
 	data := []byte("hello_world")
 
-	e := cipher.NewEncrypter(log)
+	e := cipher.NewEncrypter()
 	e.SetKey(getRandPwd(100))
 	encryptedData := e.Encrypt(data)
 	require.NotEqual(t, data, encryptedData)
@@ -41,12 +39,12 @@ func TestDecrypter(t *testing.T) {
 		password := getRandPwd(100)
 		data := []byte("hello_world")
 
-		e := cipher.NewEncrypter(log)
+		e := cipher.NewEncrypter()
 		e.SetKey(password)
 		encryptedData := e.Encrypt(data)
 		require.NotEqual(t, data, encryptedData)
 
-		d := cipher.NewDecrypter(log)
+		d := cipher.NewDecrypter()
 		d.SetKey(password)
 		decryptedData, err := d.Decrypt(encryptedData)
 		require.NoError(t, err)
@@ -56,12 +54,12 @@ func TestDecrypter(t *testing.T) {
 	t.Run("InvalidPassword", func(t *testing.T) {
 		data := []byte("hello_world")
 
-		e := cipher.NewEncrypter(log)
+		e := cipher.NewEncrypter()
 		e.SetKey(getRandPwd(100))
 		encryptedData := e.Encrypt(data)
 		require.NotEqual(t, data, encryptedData)
 
-		d := cipher.NewDecrypter(log)
+		d := cipher.NewDecrypter()
 		d.SetKey(getRandPwd(100))
 		decryptedData, err := d.Decrypt(encryptedData)
 		require.Error(t, err)

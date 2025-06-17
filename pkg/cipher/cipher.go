@@ -7,8 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-
-	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
 const (
@@ -17,12 +15,11 @@ const (
 )
 
 type Encrypter struct {
-	l logger.Logger
 	k string
 }
 
-func NewEncrypter(l logger.Logger) *Encrypter {
-	return &Encrypter{l: l}
+func NewEncrypter() *Encrypter {
+	return &Encrypter{}
 }
 
 func (e *Encrypter) SetKey(k string) {
@@ -30,17 +27,14 @@ func (e *Encrypter) SetKey(k string) {
 }
 
 func (e *Encrypter) Encrypt(data []byte) []byte {
-	const op = "encrypter.Encrypt"
-	log := e.l.With().Str("op", op).Logger()
-
 	key, err := makeKey(e.k)
 	if err != nil {
-		log.Debug().Err(err)
+		panic(err)
 	}
 
 	aead, err := makeAEAD(key)
 	if err != nil {
-		log.Debug().Err(err)
+		panic(err)
 	}
 
 	nonce := e.getNonce(aead.NonceSize())
@@ -53,12 +47,11 @@ func (e *Encrypter) getNonce(size int) []byte {
 }
 
 type Decrypter struct {
-	l logger.Logger
 	k string
 }
 
-func NewDecrypter(l logger.Logger) *Decrypter {
-	return &Decrypter{l: l}
+func NewDecrypter() *Decrypter {
+	return &Decrypter{}
 }
 
 func (d *Decrypter) SetKey(k string) {
@@ -67,23 +60,21 @@ func (d *Decrypter) SetKey(k string) {
 
 func (d *Decrypter) Decrypt(data []byte) ([]byte, error) {
 	const op = "decrypter.Decrypt"
-	log := d.l.With().Str("op", op).Logger()
 
 	key, err := makeKey(d.k)
 	if err != nil {
-		log.Debug().Err(err)
+		panic(err)
 	}
 
 	aead, err := makeAEAD(key)
 	if err != nil {
-		log.Debug().Err(err)
+		panic(err)
 	}
 
 	nonce, payload := data[:aead.NonceSize()], data[aead.NonceSize():]
 
 	decData, err := aead.Open(nil, nonce, payload, nil)
 	if err != nil {
-		log.Debug().Err(err).Msg("failed to decrypt")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return decData, nil

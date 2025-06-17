@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	logLevel = "info"
+	logLevel = "debug"
 	dsn      = ".gophkeeper.db"
 )
 

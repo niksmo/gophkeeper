@@ -124,13 +124,13 @@ func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
 
 	obj, err := h.s.Read(ctx, k, e)
 	if err != nil {
-		if errors.Is(err, pwdservice.ErrInvalidKey) {
-			log.Debug().Err(err).Msg("invalid key")
-			fmt.Fprintln(h.w, err.Error())
-			os.Exit(1)
-		}
 		if errors.Is(err, pwdservice.ErrPwdNotExists) {
 			log.Debug().Err(err).Int("id", e).Msg("not exists")
+			fmt.Fprintln(h.w, err.Error())
+			return
+		}
+		if errors.Is(err, pwdservice.ErrInvalidKey) {
+			log.Debug().Err(err).Msg("invalid key")
 			fmt.Fprintln(h.w, err.Error())
 			os.Exit(1)
 		}
@@ -194,7 +194,7 @@ func (h *PwdListHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		if errors.Is(err, pwdservice.ErrEmptyList) {
 			log.Debug().Msg("empty password names list")
 			fmt.Fprintln(h.w, err.Error())
-			os.Exit(1)
+			return
 		}
 		log.Debug().Err(err).Msg("failed to list password names")
 		handler.InternalError(h.w, err)

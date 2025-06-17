@@ -23,10 +23,10 @@ type App struct {
 func New(logLevel, dsn string) *App {
 	logger := logger.NewPretty(logLevel)
 	storage := storage.New(logger, dsn)
-	encoder := encode.NewEncoder(logger)
-	decoder := encode.NewDecoder(logger)
-	encrypter := cipher.NewEncrypter(logger)
-	decrypter := cipher.NewDecrypter(logger)
+	encoder := encode.NewEncoder()
+	decoder := encode.NewDecoder()
+	encrypter := cipher.NewEncrypter()
+	decrypter := cipher.NewDecrypter()
 
 	pwdRepository := pwdrepository.New(logger, storage)
 	pwdService := pwdservice.New(
@@ -42,10 +42,18 @@ func New(logLevel, dsn string) *App {
 	pwdAddHandler := pwdhandler.NewAddHandler(
 		logger, pwdService, os.Stdout,
 	)
+	pwdReadHandler := pwdhandler.NewReadHandler(
+		logger, pwdService, os.Stdout,
+	)
+	pwdListHandler := pwdhandler.NewListHandler(
+		logger, pwdService, os.Stdout,
+	)
 	pwdAddCommand := pwdcommand.NewPwdAddCommand(pwdAddHandler)
+	pwdReadCommand := pwdcommand.NewPwdReadCommand(pwdReadHandler)
+	pwdListCommand := pwdcommand.NewPwdListCommand(pwdListHandler)
 
 	pwdCommand := pwdcommand.NewPwdCommand()
-	pwdCommand.AddCommand(pwdAddCommand)
+	pwdCommand.AddCommand(pwdAddCommand, pwdReadCommand, pwdListCommand)
 
 	cmdRoot := command.NewRootCommand()
 	cmdRoot.AddCommand(pwdCommand)
