@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/niksmo/gophkeeper/internal/client/repository"
-	"github.com/niksmo/gophkeeper/internal/client/repository/pwdrepository"
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +16,7 @@ import (
 
 type suite struct {
 	ctx context.Context
-	r   *pwdrepository.PwdRepository
+	r   *repository.Repository
 	s   *storage.Storage
 }
 
@@ -32,7 +31,7 @@ func newSuite(t *testing.T) *suite {
 
 	s := storage.New(log, dsn)
 	s.MustRun(ctx)
-	r := pwdrepository.New(log, s)
+	r := repository.NewPwdRepository(log, s)
 	return &suite{ctx, r, s}
 }
 

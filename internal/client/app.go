@@ -8,7 +8,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
-	"github.com/niksmo/gophkeeper/internal/client/repository/pwdrepository"
+	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
@@ -33,7 +33,7 @@ func New(logLevel, dsn string) *App {
 	encrypter := cipher.NewEncrypter()
 	decrypter := cipher.NewDecrypter()
 
-	pwdRepository := pwdrepository.New(logger, storage)
+	pwdRepository := repository.NewPwdRepository(logger, storage)
 
 	pwdAddService := addservice.New[dto.PWD](
 		logger, pwdRepository, encoder, encrypter,
