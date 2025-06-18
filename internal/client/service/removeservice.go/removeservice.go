@@ -19,7 +19,7 @@ type RemoveService struct {
 	r deleteRepo
 }
 
-func New[T any](
+func New(
 	logger logger.Logger,
 	repository deleteRepo,
 ) *RemoveService {
@@ -28,7 +28,7 @@ func New[T any](
 	}
 }
 
-func (s *RemoveService) Remove(ctx context.Context, key string, entryNum int) error {
+func (s *RemoveService) Remove(ctx context.Context, entryNum int) error {
 	const op = "RemoveService.Remove"
 	log := s.l.With().Str("op", op).Logger()
 

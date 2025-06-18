@@ -211,7 +211,7 @@ func TestEdit(t *testing.T) {
 
 // Test *RemovePassword* command
 
-func newDeleteSuite(t *testing.T) *suite {
+func newRemoveSuite(t *testing.T) *suite {
 	ctx := context.Background()
 	h := new(handler)
 	cmd := pwdcommand.NewPwdRemoveCommand(h)
@@ -223,9 +223,9 @@ func newDeleteSuite(t *testing.T) *suite {
 	return st
 }
 
-func TestDelete(t *testing.T) {
+func TestRemove(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newDeleteSuite(t)
+		st := newRemoveSuite(t)
 		st.SetArgs([]string{
 			"--" + pwdcommand.EntryNumFlag, "1",
 		})
@@ -236,7 +236,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("MissedRequiredFlags", func(t *testing.T) {
-		st := newDeleteSuite(t)
+		st := newRemoveSuite(t)
 		st.SetArgs([]string{})
 		st.h.On("Handle", st.ctx, st.cmd.Flags())
 		st.cmd.ExecuteContext(st.ctx)

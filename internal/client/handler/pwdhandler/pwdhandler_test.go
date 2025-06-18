@@ -1349,7 +1349,7 @@ func TestRemove(t *testing.T) {
 		assert.Equal(t, expectedOut, actualOut)
 	})
 
-	t.Run("ReadFailedInternalErr", func(t *testing.T) {
+	t.Run("RemoveFailedInternalErr", func(t *testing.T) {
 		expectedErr := errors.New("something happened with service")
 		if os.Getenv(subProcEnv) == "1" {
 			st := newRemoveSuite(t, os.Stdout)

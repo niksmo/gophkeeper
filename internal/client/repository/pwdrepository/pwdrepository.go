@@ -43,6 +43,7 @@ func (r *PwdRepository) Add(
 	t := time.Now()
 	err := r.db.QueryRowContext(ctx, stmt, name, data, t, t).Scan(&id)
 	if err != nil {
+		// TODO: unique constaint error handler
 		log.Error().Err(err).Msg("failed to insert")
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}

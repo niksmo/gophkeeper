@@ -22,11 +22,11 @@ func (r *repo) ListNames(ctx context.Context) ([][2]string, error) {
 }
 
 type suite struct {
-	t        *testing.T
-	ctx      context.Context
-	log      logger.Logger
-	listRepo *repo
-	service  *listservice.ListService
+	t       *testing.T
+	ctx     context.Context
+	log     logger.Logger
+	repo    *repo
+	service *listservice.ListService
 }
 
 func newListSuite(t *testing.T) *suite {
@@ -50,41 +50,46 @@ func (st *suite) PrettyPanic() {
 }
 
 func TestList(t *testing.T) {
+	const ListNames = "ListNames"
 	t.Run("Ordinary", func(t *testing.T) {
 		st := newListSuite(t)
 		defer st.PrettyPanic()
-		data := [][2]string{
+
+		expectedData := [][2]string{
 			{"1", "testName1"},
 			{"2", "testName2"},
 		}
 
-		st.listRepo.On("ListNames", st.ctx).Return(data, nil)
+		st.repo.On(ListNames, st.ctx).Return(expectedData, nil)
 		actual, err := st.service.List(st.ctx)
 		require.NoError(t, err)
-		assert.Equal(t, data, actual)
+		assert.Equal(t, expectedData, actual)
 	})
 
 	t.Run("EmptyList", func(t *testing.T) {
 		st := newListSuite(t)
 		defer st.PrettyPanic()
-		data := [][2]string{}
 
-		st.listRepo.On("ListNames", st.ctx).Return(data, nil)
+		expectedData := [][2]string{}
+
+		st.repo.On(ListNames, st.ctx).Return(expectedData, nil)
 		actual, err := st.service.List(st.ctx)
 		require.NoError(t, err)
-		assert.Equal(t, data, actual)
+		assert.Equal(t, expectedData, actual)
 	})
 
 	t.Run("RepoFailed", func(t *testing.T) {
 		st := newListSuite(t)
 		defer st.PrettyPanic()
+
 		data := [][2]string{
 			{"1", "testName1"},
 			{"2", "testName2"},
 		}
+
 		listNamesErr := errors.New("something happened with repo")
 
-		st.listRepo.On("ListNames", st.ctx).Return(data, listNamesErr)
+		st.repo.On(ListNames, st.ctx).Return(data, listNamesErr)
 		actual, err := st.service.List(st.ctx)
 		require.Error(t, err)
 		assert.Nil(t, actual)

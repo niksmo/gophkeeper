@@ -93,6 +93,12 @@ func (st *suite) PrettyPanic() {
 }
 
 func TestRead(t *testing.T) {
+	const (
+		ReadByID = "ReadByID"
+		SetKey   = "SetKey"
+		Decrypt  = "Decrypt"
+		Decode   = "Decode"
+	)
 	key := "testMasterKey"
 	id := 1
 	encryptedData := []byte("encryptedData")
@@ -102,17 +108,18 @@ func TestRead(t *testing.T) {
 		st := newSuite(t)
 		defer st.PrettyPanic()
 
-		st.repo.On("ReadByID", st.ctx, id).Return(encryptedData, nil)
-		st.decrypter.On("SetKey", key)
-		st.decrypter.On("Decrypt", encryptedData).Return(encodedData, nil)
-		st.decoder.On("Decode", &obj, encodedData).Return(nil)
-
-		obj, err := st.service.Read(st.ctx, key, id)
-		require.NoError(t, err)
 		expectedObj := dto{
 			Name: "testName",
 			Data: "decodedData",
 		}
+
+		st.decrypter.On(SetKey, key)
+		st.decrypter.On(Decrypt, encryptedData).Return(encodedData, nil)
+		st.decoder.On(Decode, &obj, encodedData).Return(nil)
+		st.repo.On(ReadByID, st.ctx, id).Return(encryptedData, nil)
+
+		obj, err := st.service.Read(st.ctx, key, id)
+		require.NoError(t, err)
 		assert.Equal(t, expectedObj, obj)
 	})
 
@@ -120,17 +127,18 @@ func TestRead(t *testing.T) {
 		st := newSuite(t)
 		defer st.PrettyPanic()
 
-		st.repo.On("ReadByID", st.ctx, id).Return(
+		expectedObj := dto{}
+
+		st.decrypter.On(SetKey, key)
+		st.decrypter.On(Decrypt, encryptedData).Return(encodedData, nil)
+		st.decoder.On(Decode, &obj, encodedData).Return(nil)
+
+		st.repo.On(ReadByID, st.ctx, id).Return(
 			encryptedData, repository.ErrNotExists,
 		)
 
-		st.decrypter.On("SetKey", key)
-		st.decrypter.On("Decrypt", encryptedData).Return(encodedData, nil)
-		st.decoder.On("Decode", &obj, encodedData).Return(nil)
-
 		obj, err := st.service.Read(st.ctx, key, id)
 		require.ErrorIs(t, err, service.ErrNotExists)
-		expectedObj := dto{}
 		assert.Equal(t, expectedObj, obj)
 	})
 
@@ -139,16 +147,15 @@ func TestRead(t *testing.T) {
 		defer st.PrettyPanic()
 
 		repoErr := errors.New("something happened with repo")
+		expectedObj := dto{}
 
-		st.repo.On("ReadByID", st.ctx, id).Return(encryptedData, repoErr)
-
-		st.decrypter.On("SetKey", key)
-		st.decrypter.On("Decrypt", encryptedData).Return(encodedData, nil)
-		st.decoder.On("Decode", &obj, encodedData).Return(nil)
+		st.decrypter.On(SetKey, key)
+		st.decrypter.On(Decrypt, encryptedData).Return(encodedData, nil)
+		st.decoder.On(Decode, &obj, encodedData).Return(nil)
+		st.repo.On(ReadByID, st.ctx, id).Return(encryptedData, repoErr)
 
 		obj, err := st.service.Read(st.ctx, key, id)
 		require.ErrorIs(t, err, repoErr)
-		expectedObj := dto{}
 		assert.Equal(t, expectedObj, obj)
 	})
 
@@ -156,18 +163,19 @@ func TestRead(t *testing.T) {
 		st := newSuite(t)
 		defer st.PrettyPanic()
 
-		st.repo.On("ReadByID", st.ctx, id).Return(encryptedData, nil)
-		st.decrypter.On("SetKey", key)
+		expectedObj := dto{}
+
+		st.decrypter.On(SetKey, key)
 
 		st.decrypter.On(
 			"Decrypt", encryptedData,
 		).Return(encodedData, errors.New("invalid key"))
 
-		st.decoder.On("Decode", &obj, encodedData).Return(nil)
+		st.decoder.On(Decode, &obj, encodedData).Return(nil)
+		st.repo.On(ReadByID, st.ctx, id).Return(encryptedData, nil)
 
 		obj, err := st.service.Read(st.ctx, key, id)
 		require.ErrorIs(t, err, service.ErrInvalidKey)
-		expectedObj := dto{}
 		assert.Equal(t, expectedObj, obj)
 	})
 
@@ -176,15 +184,15 @@ func TestRead(t *testing.T) {
 		defer st.PrettyPanic()
 
 		decodeErr := errors.New("failed to decode")
+		expectedObj := dto{}
 
-		st.repo.On("ReadByID", st.ctx, id).Return(encryptedData, nil)
-		st.decrypter.On("SetKey", key)
-		st.decrypter.On("Decrypt", encryptedData).Return(encodedData, nil)
-		st.decoder.On("Decode", &obj, encodedData).Return(decodeErr)
+		st.decrypter.On(SetKey, key)
+		st.decrypter.On(Decrypt, encryptedData).Return(encodedData, nil)
+		st.decoder.On(Decode, &obj, encodedData).Return(decodeErr)
+		st.repo.On(ReadByID, st.ctx, id).Return(encryptedData, nil)
 
 		obj, err := st.service.Read(st.ctx, key, id)
 		require.ErrorIs(t, err, decodeErr)
-		expectedObj := dto{}
 		assert.Equal(t, expectedObj, obj)
 	})
 }

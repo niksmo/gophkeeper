@@ -1,13 +1,12 @@
-package addservice_test
+package editservice_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -38,11 +37,11 @@ type repo struct {
 	mock.Mock
 }
 
-func (r *repo) Add(
-	ctx context.Context, name string, data []byte,
-) (int, error) {
-	args := r.Called(ctx, name, data)
-	return args.Int(0), args.Error(1)
+func (r *repo) Update(
+	ctx context.Context, entryNum int, name string, data []byte,
+) error {
+	args := r.Called(ctx, entryNum, name, data)
+	return args.Error(0)
 }
 
 type suite struct {
@@ -52,7 +51,7 @@ type suite struct {
 	repo      *repo
 	encoder   *encoder
 	encrypter *encrypter
-	service   *addservice.AddService[any]
+	service   *editservice.EditService[any]
 }
 
 func newSuite(t *testing.T) *suite {
@@ -61,7 +60,7 @@ func newSuite(t *testing.T) *suite {
 	encoder := &encoder{}
 	encrypter := &encrypter{}
 	repo := &repo{}
-	service := addservice.New[any](log, repo, encoder, encrypter)
+	service := editservice.New[any](log, repo, encoder, encrypter)
 	st := &suite{
 		t, ctx, log,
 		repo,
@@ -80,15 +79,15 @@ func (st *suite) PrettyPanic() {
 	}
 }
 
-func TestAddService(t *testing.T) {
+func TestEditService(t *testing.T) {
 	const (
-		Add     = "Add"
+		Update  = "Update"
 		Encode  = "Encode"
 		SetKey  = "SetKey"
 		Encrypt = "Encrypt"
 	)
-
 	key := "testMasterKey"
+	entryNum := 1
 	obj := struct{ Name string }{
 		Name: "testName",
 	}
@@ -101,18 +100,16 @@ func TestAddService(t *testing.T) {
 
 		var encodeErr error
 		var repoAddErr error
-		expected := 1
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Add, st.ctx, obj.Name, encryptedData,
-		).Return(expected, repoAddErr)
+			Update, st.ctx, entryNum, obj.Name, encryptedData,
+		).Return(repoAddErr)
 
-		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
+		err := st.service.Edit(st.ctx, key, entryNum, obj.Name, obj)
 		require.NoError(t, err)
-		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("EncodeFailed", func(t *testing.T) {
@@ -121,37 +118,33 @@ func TestAddService(t *testing.T) {
 
 		var repoAddErr error
 		var encodeErr = errors.New("encode failed")
-		expected := 0
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Add, st.ctx, obj.Name, encryptedData,
-		).Return(expected, repoAddErr)
+			Update, st.ctx, entryNum, obj.Name, encryptedData,
+		).Return(repoAddErr)
 
-		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
+		err := st.service.Edit(st.ctx, key, entryNum, obj.Name, obj)
 		require.ErrorIs(t, err, encodeErr)
-		assert.Equal(t, expected, actual)
 	})
 
-	t.Run("RepoAddFailed", func(t *testing.T) {
+	t.Run("RepoUpdateFailed", func(t *testing.T) {
 		st := newSuite(t)
 		defer st.PrettyPanic()
 
 		var encodeErr error
 		var repoAddErr = errors.New("repo add failed")
-		expected := 0
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Add, st.ctx, obj.Name, encryptedData,
-		).Return(expected, repoAddErr)
+			Update, st.ctx, entryNum, obj.Name, encryptedData,
+		).Return(repoAddErr)
 
-		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
+		err := st.service.Edit(st.ctx, key, entryNum, obj.Name, obj)
 		require.ErrorIs(t, err, repoAddErr)
-		assert.Equal(t, expected, actual)
 	})
 }
