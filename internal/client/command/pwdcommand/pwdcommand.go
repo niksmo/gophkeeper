@@ -39,7 +39,7 @@ const (
 func NewPwdCommand() *command.Command {
 	c := &cobra.Command{
 		Use:   "password",
-		Short: "Save accounts data here",
+		Short: "Use the password command to save your accounts",
 	}
 	return &command.Command{Command: c}
 }
