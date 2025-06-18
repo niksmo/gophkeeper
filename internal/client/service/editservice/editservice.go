@@ -1,4 +1,4 @@
-package addservice
+package editservice
 
 import (
 	"context"
@@ -20,25 +20,25 @@ type (
 		Encrypt([]byte) []byte
 	}
 
-	addRepo interface {
-		Add(ctx context.Context, name string, data []byte) (int, error)
+	updateRepo interface {
+		Update(ctx context.Context, id int, name string, data []byte) error
 	}
 )
 
-type AddService[T any] struct {
+type EditService[T any] struct {
 	l         logger.Logger
-	r         addRepo
+	r         updateRepo
 	encoder   encoder
 	encrypter encrypter
 }
 
 func New[T any](
 	logger logger.Logger,
-	repository addRepo,
+	repository updateRepo,
 	encoder encoder,
 	encrypter encrypter,
-) *AddService[T] {
-	return &AddService[T]{
+) *EditService[T] {
+	return &EditService[T]{
 		l:         logger,
 		r:         repository,
 		encoder:   encoder,
@@ -46,30 +46,29 @@ func New[T any](
 	}
 }
 
-func (s *AddService[T]) Add(
-	ctx context.Context, key, name string, dto T,
-) (int, error) {
-	const op = "AddService.Add"
+func (s *EditService[T]) Edit(
+	ctx context.Context, key string, entryNum int, name string, dto T,
+) error {
+	const op = "EditService.Update"
 	log := s.l.With().Str("op", op).Logger()
 
 	b, err := s.encoder.Encode(dto)
 	if err != nil {
 		log.Debug().Err(err).Msg("failed to encode object to bytes")
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	s.encrypter.SetKey(key)
 	data := s.encrypter.Encrypt(b)
 
-	entryNum, err := s.r.Add(ctx, name, data)
-	if err != nil {
-		if errors.Is(err, repository.ErrAlreadyExists) {
-			log.Debug().Str("name", name).Msg("object already exists")
-			return 0, service.ErrAlreadyExists
+	if err = s.r.Update(ctx, entryNum, name, data); err != nil {
+		if errors.Is(err, repository.ErrNotExists) {
+			log.Debug().Str("name", name).Msg("object not exists")
+			return service.ErrNotExists
 		}
-		log.Debug().Err(err).Msg("failed to add object to repository")
-		return 0, fmt.Errorf("%s: %w", op, err)
+		log.Debug().Err(err).Msg("failed to save updated object to repository")
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	return entryNum, nil
+	return nil
 }

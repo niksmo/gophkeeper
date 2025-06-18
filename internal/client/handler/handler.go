@@ -42,3 +42,11 @@ func GetNameValue(v command.ValueGetter) (string, error) {
 	}
 	return n, nil
 }
+
+func GetEnryNumValue(v command.ValueGetter) (int, error) {
+	e, err := v.GetInt(command.EntryNumFlag)
+	if err != nil {
+		return 0, fmt.Errorf("--%s", command.EntryNumFlag)
+	}
+	return e, nil
+}

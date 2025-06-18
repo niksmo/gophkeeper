@@ -8,10 +8,9 @@ import (
 const (
 	MasterKeyFlag = command.MasterKeyFlag
 	NameFlag      = command.NameFlag
+	EntryNumFlag  = command.EntryNumFlag
 	PasswordFlag  = "password"
 	LoginFlag     = "login"
-	EntryNumFlag  = "entry"
-	AllFlag       = "all"
 )
 
 const (
@@ -121,9 +120,9 @@ func NewPwdEditCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewPwdDeleteCommand(h command.Handler) *command.Command {
+func NewPwdRemoveCommand(h command.Handler) *command.Command {
 	c := &cobra.Command{
-		Use: "delete",
+		Use: "remove",
 		Run: func(cmd *cobra.Command, args []string) {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},

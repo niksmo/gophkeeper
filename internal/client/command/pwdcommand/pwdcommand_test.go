@@ -209,12 +209,12 @@ func TestEdit(t *testing.T) {
 	})
 }
 
-// Test *DeletePassword* command
+// Test *RemovePassword* command
 
 func newDeleteSuite(t *testing.T) *suite {
 	ctx := context.Background()
 	h := new(handler)
-	cmd := pwdcommand.NewPwdDeleteCommand(h)
+	cmd := pwdcommand.NewPwdRemoveCommand(h)
 	args := os.Args
 	t.Cleanup(func() {
 		os.Args = args

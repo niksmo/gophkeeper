@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// *Tests Mocks*
+
 type valueGetter struct {
 	mock.Mock
 }
@@ -65,6 +67,28 @@ func (s *pwdListService) List(ctx context.Context) ([][2]string, error) {
 	return args.Get(0).([][2]string), args.Error(1)
 }
 
+type pwdEditService struct {
+	mock.Mock
+}
+
+func (s *pwdEditService) Edit(
+	ctx context.Context, key string, entryNum int, name string, dto dto.PWD,
+) error {
+	args := s.Called(ctx, key, entryNum, name, dto)
+	return args.Error(0)
+}
+
+type pwdRemoveService struct {
+	mock.Mock
+}
+
+func (s *pwdRemoveService) Remove(ctx context.Context, entryNum int) error {
+	args := s.Called(ctx, entryNum)
+	return args.Error(0)
+}
+
+// Test *AddPassword* handler
+
 type addSuite struct {
 	ctx         context.Context
 	log         logger.Logger
@@ -90,6 +114,8 @@ func (st *addSuite) PrettyPanic() {
 }
 
 func TestAdd(t *testing.T) {
+	const subProcEnv = "GOPHKEEPER_TEST_PWDHDR_ADD"
+	const serviceMethod = "Add"
 	t.Run("Ordinary", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		st := newAddSuite(t, buf)
@@ -98,7 +124,7 @@ func TestAdd(t *testing.T) {
 		expectedEntryNo := 1
 		var expectedErr error
 		expectedOut := fmt.Sprintf(
-			"the password is saved under the record number: %d\n",
+			"the password is saved under the record number %d\n",
 			expectedEntryNo,
 		)
 
@@ -127,7 +153,7 @@ func TestAdd(t *testing.T) {
 		).Return(obj.Login, nil)
 
 		st.service.On(
-			"Add", st.ctx, masterKey, obj.Name, obj,
+			serviceMethod, st.ctx, masterKey, obj.Name, obj,
 		).Return(expectedEntryNo, expectedErr)
 
 		st.handler.Handle(st.ctx, st.valueGetter)
@@ -145,7 +171,7 @@ func TestAdd(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDADDHDR_REQUIREDFLAGS") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newAddSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -165,7 +191,7 @@ func TestAdd(t *testing.T) {
 			).Return(obj.Login, errors.New(""))
 
 			st.service.On(
-				"Add", st.ctx, masterKey, obj.Name, obj,
+				serviceMethod, st.ctx, masterKey, obj.Name, obj,
 			).Return(expectedEntryNo, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
@@ -184,11 +210,9 @@ func TestAdd(t *testing.T) {
 			pwdcommand.PasswordFlag,
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestAdd/RequiredFlagsNotSpecified",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDADDHDR_REQUIREDFLAGS=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -212,7 +236,7 @@ func TestAdd(t *testing.T) {
 			Password: "      ",
 		}
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDADDHDR_REQUIREDFLAGS") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newAddSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -232,7 +256,7 @@ func TestAdd(t *testing.T) {
 			).Return(obj.Login, nil)
 
 			st.service.On(
-				"Add", st.ctx, masterKey, obj.Name, obj,
+				serviceMethod, st.ctx, masterKey, obj.Name, obj,
 			).Return(expectedEntryNo, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
@@ -251,11 +275,9 @@ func TestAdd(t *testing.T) {
 			pwdcommand.PasswordFlag,
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestAdd/RequiredFlagsNotSpecified",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDADDHDR_REQUIREDFLAGS=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -279,7 +301,7 @@ func TestAdd(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDADDHDR_FAILEDSAVE") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newAddSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -299,7 +321,7 @@ func TestAdd(t *testing.T) {
 			).Return(obj.Login, nil)
 
 			st.service.On(
-				"Add", st.ctx, masterKey, obj.Name, obj,
+				serviceMethod, st.ctx, masterKey, obj.Name, obj,
 			).Return(expectedEntryNo, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
@@ -316,11 +338,9 @@ func TestAdd(t *testing.T) {
 			expectedErr.Error(),
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestAdd/FailedSave",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDADDHDR_FAILEDSAVE=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -334,6 +354,8 @@ func TestAdd(t *testing.T) {
 		assert.Equal(t, expectedOut, actualOut)
 	})
 }
+
+// Test *ReadPassword* handler
 
 type readSuite struct {
 	ctx         context.Context
@@ -360,6 +382,8 @@ func (st *readSuite) PrettyPanic() {
 }
 
 func TestRead(t *testing.T) {
+	const subProcEnv = "GOPHKEEPER_TEST_PWDHDR_READ"
+	const serviceMethod = "Read"
 	t.Run("Ordinary", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		st := newReadSuite(t, buf)
@@ -385,7 +409,7 @@ func TestRead(t *testing.T) {
 			"GetInt", pwdcommand.EntryNumFlag,
 		).Return(id, nil)
 
-		st.service.On("Read", st.ctx, key, id).Return(obj, nil)
+		st.service.On(serviceMethod, st.ctx, key, id).Return(obj, nil)
 
 		st.handler.Handle(st.ctx, st.valueGetter)
 		assert.Equal(t, expectedOut, buf.String())
@@ -401,7 +425,7 @@ func TestRead(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDREADHDR_REQUIREDFLAGS") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newReadSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -412,7 +436,7 @@ func TestRead(t *testing.T) {
 				"GetInt", pwdcommand.EntryNumFlag,
 			).Return(id, errors.New(""))
 
-			st.service.On("Read", st.ctx, key, id).Return(obj, nil)
+			st.service.On(serviceMethod, st.ctx, key, id).Return(obj, nil)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
 			return
@@ -429,11 +453,9 @@ func TestRead(t *testing.T) {
 			pwdcommand.EntryNumFlag,
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestRead/RequiredFlagsNotSpecified",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDREADHDR_REQUIREDFLAGS=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -457,7 +479,7 @@ func TestRead(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDREADHDR_REQUIREDFLAGS") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newReadSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -468,7 +490,7 @@ func TestRead(t *testing.T) {
 				"GetInt", pwdcommand.EntryNumFlag,
 			).Return(id, nil)
 
-			st.service.On("Read", st.ctx, key, id).Return(obj, nil)
+			st.service.On(serviceMethod, st.ctx, key, id).Return(obj, nil)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
 			return
@@ -484,11 +506,9 @@ func TestRead(t *testing.T) {
 			pwdcommand.MasterKeyFlag,
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestRead/RequiredFlagsSpaceStr",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDREADHDR_REQUIREDFLAGS=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -512,7 +532,7 @@ func TestRead(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDREADHDR_INVALIDKEY") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newReadSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -524,7 +544,7 @@ func TestRead(t *testing.T) {
 			).Return(id, nil)
 
 			st.service.On(
-				"Read", st.ctx, key, id,
+				serviceMethod, st.ctx, key, id,
 			).Return(obj, service.ErrInvalidKey)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
@@ -538,11 +558,9 @@ func TestRead(t *testing.T) {
 		expectedExitCode := 1
 		expectedOut := fmt.Sprintln(service.ErrInvalidKey)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestRead/InvalidKey",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDREADHDR_INVALIDKEY=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -566,7 +584,7 @@ func TestRead(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDREADHDR_NOTEXISTS") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newReadSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -578,7 +596,7 @@ func TestRead(t *testing.T) {
 			).Return(id, nil)
 
 			st.service.On(
-				"Read", st.ctx, key, id,
+				serviceMethod, st.ctx, key, id,
 			).Return(obj, service.ErrNotExists)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
@@ -595,11 +613,9 @@ func TestRead(t *testing.T) {
 			id,
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestRead/NotExistsPassword",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDREADHDR_NOTEXISTS=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -624,7 +640,7 @@ func TestRead(t *testing.T) {
 
 		expectedErr := errors.New("something happened with service")
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDREADHDR_INTERNAL") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newReadSuite(t, os.Stdout)
 
 			st.valueGetter.On(
@@ -636,7 +652,7 @@ func TestRead(t *testing.T) {
 			).Return(id, nil)
 
 			st.service.On(
-				"Read", st.ctx, key, id,
+				serviceMethod, st.ctx, key, id,
 			).Return(obj, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
@@ -653,11 +669,9 @@ func TestRead(t *testing.T) {
 			expectedErr.Error(),
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestRead/ReadFailedInternalErr",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDREADHDR_INTERNAL=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 
 		cmd.Stderr = os.Stderr
@@ -671,6 +685,8 @@ func TestRead(t *testing.T) {
 		assert.Equal(t, expectedOut, actualOut)
 	})
 }
+
+// Test *ListPassword* handler
 
 type listSuite struct {
 	ctx         context.Context
@@ -697,6 +713,8 @@ func (st *listSuite) PrettyPanic() {
 }
 
 func TestList(t *testing.T) {
+	const subProcEnv = "GOPHKEEPER_TEST_PWDHDR_LIST"
+	const serviceMethod = "List"
 	t.Run("Ordinary", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		st := newListSuite(t, buf)
@@ -707,7 +725,7 @@ func TestList(t *testing.T) {
 			{"2", "testName1"},
 		}
 
-		st.service.On("List", st.ctx).Return(namesSlice, nil)
+		st.service.On(serviceMethod, st.ctx).Return(namesSlice, nil)
 		st.handler.Handle(st.ctx, st.valueGetter)
 		expectedOut := fmt.Sprintf(
 			"saved passwords names:\n%s\n%s\n",
@@ -718,13 +736,11 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("EmptyList", func(t *testing.T) {
-		if os.Getenv("GOPHKEEPER_TEST_PWDLISTHDR_EMPTYLIST") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newListSuite(t, os.Stdout)
 			namesSlice := [][2]string{}
 
-			st.service.On(
-				"List", st.ctx,
-			).Return(namesSlice, nil)
+			st.service.On(serviceMethod, st.ctx).Return(namesSlice, nil)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
 			return
@@ -736,11 +752,9 @@ func TestList(t *testing.T) {
 		expectedExitCode := 0
 		expectedOut := "there are no saved passwords\nPASS\n"
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestList/EmptyList",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDLISTHDR_EMPTYLIST=1",
+			os.Environ(), subProcEnv+"=1",
 		)
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = buf
@@ -756,12 +770,12 @@ func TestList(t *testing.T) {
 	t.Run("FailedListInternalErr", func(t *testing.T) {
 		expectedErr := errors.New("something happened in service")
 
-		if os.Getenv("GOPHKEEPER_TEST_PWDLISTHDR_FAILLIST") == "1" {
+		if os.Getenv(subProcEnv) == "1" {
 			st := newListSuite(t, os.Stdout)
 			namesSlice := [][2]string{}
 
 			st.service.On(
-				"List", st.ctx,
+				serviceMethod, st.ctx,
 			).Return(namesSlice, expectedErr)
 
 			st.handler.Handle(st.ctx, st.valueGetter)
@@ -777,12 +791,595 @@ func TestList(t *testing.T) {
 			expectedErr.Error(),
 		)
 
-		cmd := exec.Command(
-			os.Args[0], "-test.run=TestList/FailedListInternalErr",
-		)
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
-			os.Environ(), "GOPHKEEPER_TEST_PWDLISTHDR_FAILLIST=1",
+			os.Environ(), subProcEnv+"=1",
 		)
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr))
+		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+}
+
+// Test *EditPassword* handler
+
+type editSuite struct {
+	ctx         context.Context
+	log         logger.Logger
+	service     *pwdEditService
+	valueGetter *valueGetter
+	handler     *pwdhandler.PwdEditHandler
+	w           io.Writer
+	t           *testing.T
+}
+
+func newEditSuite(t *testing.T, w io.Writer) *editSuite {
+	ctx := context.Background()
+	log := logger.NewPretty("debug")
+	service := &pwdEditService{}
+	valueGetter := &valueGetter{}
+	handler := pwdhandler.NewEditHandler(log, service, w)
+	return &editSuite{ctx, log, service, valueGetter, handler, w, t}
+}
+
+func (st *editSuite) PrettyPanic() {
+	st.t.Helper()
+	prettyPanic(st.t)
+}
+
+func TestEdit(t *testing.T) {
+	const subProcEnv = "GOPHKEEPER_TEST_PWDHDR_EDIT"
+	const serviceMethod = "Edit"
+	t.Run("Ordinary", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		st := newEditSuite(t, buf)
+		defer st.PrettyPanic()
+
+		key := "testKey"
+		id := 1
+		obj := dto.PWD{
+			Name:     "testName",
+			Login:    "testLogin",
+			Password: "testPassword",
+		}
+		expectedOut := fmt.Sprintf(
+			"the password under the record number %d was edited\n",
+			id,
+		)
+
+		st.valueGetter.On(
+			"GetString", pwdcommand.MasterKeyFlag,
+		).Return(key, nil)
+
+		st.valueGetter.On(
+			"GetInt", pwdcommand.EntryNumFlag,
+		).Return(id, nil)
+
+		st.valueGetter.On(
+			"GetString", pwdcommand.NameFlag,
+		).Return(obj.Name, nil)
+
+		st.valueGetter.On(
+			"GetString", pwdcommand.PasswordFlag,
+		).Return(obj.Password, nil)
+
+		st.valueGetter.On(
+			"GetString", pwdcommand.LoginFlag,
+		).Return(obj.Login, nil)
+
+		st.service.On(
+			serviceMethod, st.ctx, key, id, obj.Name, obj,
+		).Return(nil)
+
+		st.handler.Handle(st.ctx, st.valueGetter)
+		assert.Equal(t, expectedOut, buf.String())
+	})
+
+	t.Run("RequiredFlagsNotSpecified", func(t *testing.T) {
+		key := "testKey"
+		id := 1
+
+		obj := dto.PWD{
+			Name:     "testName",
+			Login:    "testLogin",
+			Password: "testPassword",
+		}
+
+		if os.Getenv(subProcEnv) == "1" {
+			st := newEditSuite(t, os.Stdout)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.MasterKeyFlag,
+			).Return(key, errors.New(""))
+
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(id, errors.New(""))
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.NameFlag,
+			).Return(obj.Name, errors.New(""))
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.PasswordFlag,
+			).Return(obj.Password, errors.New(""))
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.LoginFlag,
+			).Return(obj.Login, nil)
+
+			st.service.On(
+				serviceMethod, st.ctx, key, id, obj.Name, obj,
+			).Return(nil)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newEditSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 1
+		expectedOut := fmt.Sprintf(
+			"required flags are not specified:\n--%s\n--%s\n--%s\n--%s\n",
+			pwdcommand.MasterKeyFlag,
+			pwdcommand.NameFlag,
+			pwdcommand.EntryNumFlag,
+			pwdcommand.PasswordFlag,
+		)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr))
+		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+
+	t.Run("RequiredFlagsSpaceStr", func(t *testing.T) {
+		key := "    "
+		id := 1
+
+		obj := dto.PWD{
+			Name:     "  ",
+			Login:    "testLogin",
+			Password: "   ",
+		}
+
+		if os.Getenv(subProcEnv) == "1" {
+			st := newEditSuite(t, os.Stdout)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.MasterKeyFlag,
+			).Return(key, nil)
+
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(id, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.NameFlag,
+			).Return(obj.Name, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.PasswordFlag,
+			).Return(obj.Password, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.LoginFlag,
+			).Return(obj.Login, nil)
+
+			st.service.On(serviceMethod, st.ctx, key, id, obj.Name, obj).Return(nil)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newReadSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 1
+		expectedOut := fmt.Sprintf(
+			"required flags are not specified:\n--%s\n--%s\n--%s\n",
+			pwdcommand.MasterKeyFlag,
+			pwdcommand.NameFlag,
+			pwdcommand.PasswordFlag,
+		)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr))
+		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+
+	t.Run("InvalidKey", func(t *testing.T) {
+		key := "testKey"
+		id := 1
+
+		obj := dto.PWD{
+			Name:     "testName",
+			Login:    "testLogin",
+			Password: "testPassword",
+		}
+
+		if os.Getenv(subProcEnv) == "1" {
+			st := newEditSuite(t, os.Stdout)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.MasterKeyFlag,
+			).Return(key, nil)
+
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(id, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.NameFlag,
+			).Return(obj.Name, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.PasswordFlag,
+			).Return(obj.Password, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.LoginFlag,
+			).Return(obj.Login, nil)
+
+			st.service.On(
+				serviceMethod, st.ctx, key, id, obj.Name, obj,
+			).Return(service.ErrInvalidKey)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newEditSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 1
+		expectedOut := fmt.Sprintln(service.ErrInvalidKey)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr))
+		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+
+	t.Run("NotExistsPassword", func(t *testing.T) {
+		key := "testKey"
+		id := 1
+
+		obj := dto.PWD{
+			Name:     "testName",
+			Login:    "testLogin",
+			Password: "testPassword",
+		}
+
+		if os.Getenv(subProcEnv) == "1" {
+			st := newEditSuite(t, os.Stdout)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.MasterKeyFlag,
+			).Return(key, nil)
+
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(id, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.NameFlag,
+			).Return(obj.Name, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.PasswordFlag,
+			).Return(obj.Password, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.LoginFlag,
+			).Return(obj.Login, nil)
+
+			st.service.On(
+				serviceMethod, st.ctx, key, id, obj.Name, obj,
+			).Return(service.ErrNotExists)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newEditSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 0
+		expectedOut := fmt.Sprintf(
+			"the password with entry number %d is not exists\nPASS\n",
+			id,
+		)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		require.NoError(t, err)
+		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+
+	t.Run("EditFailedInternalErr", func(t *testing.T) {
+		key := "testKey"
+		id := 1
+
+		obj := dto.PWD{
+			Name:     "testName",
+			Login:    "testLogin",
+			Password: "testPassword",
+		}
+
+		expectedErr := errors.New("something happened with service")
+
+		if os.Getenv(subProcEnv) == "1" {
+			st := newEditSuite(t, os.Stdout)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.MasterKeyFlag,
+			).Return(key, nil)
+
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(id, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.NameFlag,
+			).Return(obj.Name, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.PasswordFlag,
+			).Return(obj.Password, nil)
+
+			st.valueGetter.On(
+				"GetString", pwdcommand.LoginFlag,
+			).Return(obj.Login, nil)
+
+			st.service.On(
+				serviceMethod, st.ctx, key, id, obj.Name, obj,
+			).Return(expectedErr)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newEditSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 1
+		expectedOut := fmt.Sprintf(
+			"the application completed with an error: %s\n",
+			expectedErr.Error(),
+		)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr))
+		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+}
+
+// Test *RemovePassword* handler
+
+type removeSuite struct {
+	ctx         context.Context
+	log         logger.Logger
+	service     *pwdRemoveService
+	valueGetter *valueGetter
+	handler     *pwdhandler.PwdRemoveHandler
+	w           io.Writer
+	t           *testing.T
+}
+
+func newRemoveSuite(t *testing.T, w io.Writer) *removeSuite {
+	ctx := context.Background()
+	log := logger.NewPretty("debug")
+	service := &pwdRemoveService{}
+	valueGetter := &valueGetter{}
+	handler := pwdhandler.NewRemoveHandler(log, service, w)
+	return &removeSuite{ctx, log, service, valueGetter, handler, w, t}
+}
+
+func (st *removeSuite) PrettyPanic() {
+	st.t.Helper()
+	prettyPanic(st.t)
+}
+
+func TestRemove(t *testing.T) {
+	const subProcEnv = "GOPHKEEPER_TEST_PWDHDR_REMOVE"
+	const serviceMethod = "Remove"
+	t.Run("Ordinary", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		st := newRemoveSuite(t, buf)
+		defer st.PrettyPanic()
+
+		id := 1
+		expectedOut := fmt.Sprintf(
+			"the password under the record number %d was removed\n",
+			id,
+		)
+
+		st.valueGetter.On(
+			"GetInt", pwdcommand.EntryNumFlag,
+		).Return(id, nil)
+
+		st.service.On(serviceMethod, st.ctx, id).Return(nil)
+
+		st.handler.Handle(st.ctx, st.valueGetter)
+		assert.Equal(t, expectedOut, buf.String())
+	})
+
+	t.Run("RequiredFlagsNotSpecified", func(t *testing.T) {
+		if os.Getenv(subProcEnv) == "1" {
+			st := newRemoveSuite(t, os.Stdout)
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(0, errors.New(""))
+
+			st.service.On(serviceMethod, st.ctx, 0).Return(nil)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newRemoveSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 1
+		expectedOut := fmt.Sprintf(
+			"required flags are not specified:\n--%s\n",
+			pwdcommand.EntryNumFlag,
+		)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr))
+		require.Equal(t, exitErr.ExitCode(), expectedExitCode)
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+
+	t.Run("NotExistsPassword", func(t *testing.T) {
+		id := 1
+		if os.Getenv(subProcEnv) == "1" {
+			st := newRemoveSuite(t, os.Stdout)
+
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(id, nil)
+
+			st.service.On(
+				serviceMethod, st.ctx, id,
+			).Return(service.ErrNotExists)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newRemoveSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 0
+		expectedOut := fmt.Sprintf(
+			"the password with entry number %d is not exists\nPASS\n",
+			id,
+		)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = buf
+		err := cmd.Run()
+		require.NoError(t, err)
+		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
+
+		actualOut := buf.String()
+		assert.Equal(t, expectedOut, actualOut)
+	})
+
+	t.Run("ReadFailedInternalErr", func(t *testing.T) {
+		expectedErr := errors.New("something happened with service")
+		if os.Getenv(subProcEnv) == "1" {
+			st := newRemoveSuite(t, os.Stdout)
+			id := 1
+
+			st.valueGetter.On(
+				"GetInt", pwdcommand.EntryNumFlag,
+			).Return(id, nil)
+
+			st.service.On(serviceMethod, st.ctx, id).Return(expectedErr)
+
+			st.handler.Handle(st.ctx, st.valueGetter)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		st := newRemoveSuite(t, buf)
+		defer st.PrettyPanic()
+
+		expectedExitCode := 1
+		expectedOut := fmt.Sprintf(
+			"the application completed with an error: %s\n",
+			expectedErr.Error(),
+		)
+
+		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+		cmd.Env = append(
+			os.Environ(), subProcEnv+"=1",
+		)
+
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = buf
 		err := cmd.Run()

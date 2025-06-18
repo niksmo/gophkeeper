@@ -47,11 +47,13 @@ func New[T any](
 	}
 }
 
-func (s *ReadService[T]) Read(ctx context.Context, key string, id int) (T, error) {
+func (s *ReadService[T]) Read(
+	ctx context.Context, key string, entryNum int,
+) (T, error) {
 	const op = "ReadService.Read"
 	log := s.l.With().Str("op", op).Logger()
 
-	data, err := s.r.ReadByID(ctx, id)
+	data, err := s.r.ReadByID(ctx, entryNum)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotExists) {
 			log.Debug().Msg("object not exists")

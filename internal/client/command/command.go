@@ -9,6 +9,7 @@ import (
 const (
 	MasterKeyFlag = "master-key"
 	NameFlag      = "name"
+	EntryNumFlag  = "entry"
 )
 
 type (

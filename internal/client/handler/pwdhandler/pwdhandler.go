@@ -28,6 +28,20 @@ type (
 	listService interface {
 		List(context.Context) ([][2]string, error)
 	}
+
+	editService interface {
+		Edit(
+			ctx context.Context,
+			key string,
+			entryNum int,
+			name string,
+			obj dto.PWD,
+		) error
+	}
+
+	removeService interface {
+		Remove(ctx context.Context, entryNum int) error
+	}
 )
 
 type PwdAddHandler struct {
@@ -99,7 +113,7 @@ func (h *PwdAddHandler) getFlagValues(
 func (h *PwdAddHandler) printOut(entryNum int) {
 	fmt.Fprintf(
 		h.w,
-		"the password is saved under the record number: %d\n",
+		"the password is saved under the record number %d\n",
 		entryNum,
 	)
 }
@@ -120,21 +134,21 @@ func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
 	const op = "PwdReadHandler.Handle"
 	log := h.l.With().Str("op", op).Logger()
 
-	k, e, err := h.getFlagValues(v)
+	key, entryNum, err := h.getFlagValues(v)
 	if err != nil {
 		log.Debug().Err(err).Send()
 		fmt.Fprintln(h.w, err.Error())
 		os.Exit(1)
 	}
 
-	obj, err := h.s.Read(ctx, k, e)
+	obj, err := h.s.Read(ctx, key, entryNum)
 	if err != nil {
 		if errors.Is(err, service.ErrNotExists) {
-			log.Debug().Err(err).Int("id", e).Msg("not exists")
+			log.Debug().Err(err).Int("id", entryNum).Msg("not exists")
 			fmt.Fprintf(
 				h.w,
 				"the password with entry number %d is not exists\n",
-				e,
+				entryNum,
 			)
 			return
 		}
@@ -149,7 +163,7 @@ func (h *PwdReadHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		os.Exit(1)
 	}
 
-	h.printOut(e, obj)
+	h.printOut(entryNum, obj)
 }
 
 func (h *PwdReadHandler) getFlagValues(
@@ -161,9 +175,9 @@ func (h *PwdReadHandler) getFlagValues(
 		errs = append(errs, err)
 	}
 
-	e, err = v.GetInt(pwdcommand.EntryNumFlag)
+	e, err = handler.GetEnryNumValue(v)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("--%s", pwdcommand.EntryNumFlag))
+		errs = append(errs, err)
 	}
 
 	err = handler.RequiredFlagsErr(errs)
@@ -215,4 +229,160 @@ func (h *PwdListHandler) printOut(data [][2]string) {
 		out.WriteString(fmt.Sprintf("\n%s: %s", entry, name))
 	}
 	fmt.Fprintf(h.w, "saved passwords names:%s\n", out.String())
+}
+
+type PwdEditHandler struct {
+	l logger.Logger
+	s editService
+	w io.Writer
+}
+
+func NewEditHandler(
+	l logger.Logger, s editService, w io.Writer,
+) *PwdEditHandler {
+	return &PwdEditHandler{l, s, w}
+}
+
+func (h *PwdEditHandler) Handle(ctx context.Context, v command.ValueGetter) {
+	const op = "PwdEditHandler.Handle"
+	log := h.l.With().Str("op", op).Logger()
+
+	key, name, password, login, entryNum, err := h.getFlagValues(v)
+	if err != nil {
+		log.Debug().Err(err).Send()
+		fmt.Fprintln(h.w, err.Error())
+		os.Exit(1)
+	}
+
+	obj := dto.PWD{
+		Name:     name,
+		Login:    login,
+		Password: password,
+	}
+
+	err = h.s.Edit(ctx, key, entryNum, name, obj)
+	if err != nil {
+		if errors.Is(err, service.ErrNotExists) {
+			log.Debug().Err(err).Int("id", entryNum).Msg("not exists")
+			fmt.Fprintf(
+				h.w,
+				"the password with entry number %d is not exists\n",
+				entryNum,
+			)
+			return
+		}
+		if errors.Is(err, service.ErrInvalidKey) {
+			log.Debug().Err(err).Msg("invalid key")
+			fmt.Fprintln(h.w, err.Error())
+			os.Exit(1)
+		}
+		log.Debug().Err(err).Msg("failed to edit password")
+		handler.InternalError(h.w, err)
+		os.Exit(1)
+	}
+
+	h.printOut(entryNum)
+}
+
+func (h *PwdEditHandler) getFlagValues(
+	v command.ValueGetter,
+) (k, n, p, l string, e int, err error) {
+	var errs []error
+	k, err = handler.GetMasterKeyValue(v)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	n, err = handler.GetNameValue(v)
+	if err != nil {
+		errs = append(errs, err)
+
+	}
+
+	e, err = handler.GetEnryNumValue(v)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	p, err = v.GetString(pwdcommand.PasswordFlag)
+	if err != nil || len(strings.TrimSpace(p)) == 0 {
+		errs = append(errs, fmt.Errorf("--%s", pwdcommand.PasswordFlag))
+	}
+
+	l, _ = v.GetString(pwdcommand.LoginFlag)
+
+	err = handler.RequiredFlagsErr(errs)
+
+	return k, n, p, l, e, err
+}
+
+func (h *PwdEditHandler) printOut(entryNum int) {
+	fmt.Fprintf(
+		h.w,
+		"the password under the record number %d was edited\n",
+		entryNum,
+	)
+}
+
+type PwdRemoveHandler struct {
+	l logger.Logger
+	s removeService
+	w io.Writer
+}
+
+func NewRemoveHandler(
+	l logger.Logger, s removeService, w io.Writer,
+) *PwdRemoveHandler {
+	return &PwdRemoveHandler{l, s, w}
+}
+
+func (h *PwdRemoveHandler) Handle(ctx context.Context, v command.ValueGetter) {
+	const op = "PwdRemoveHandler.Handle"
+	log := h.l.With().Str("op", op).Logger()
+
+	entryNum, err := h.getFlagValues(v)
+	if err != nil {
+		log.Debug().Err(err).Send()
+		fmt.Fprintln(h.w, err.Error())
+		os.Exit(1)
+	}
+
+	err = h.s.Remove(ctx, entryNum)
+	if err != nil {
+		if errors.Is(err, service.ErrNotExists) {
+			log.Debug().Err(err).Int("id", entryNum).Msg("not exists")
+			fmt.Fprintf(
+				h.w,
+				"the password with entry number %d is not exists\n",
+				entryNum,
+			)
+			return
+		}
+		log.Debug().Err(err).Msg("failed to remove password")
+		handler.InternalError(h.w, err)
+		os.Exit(1)
+	}
+
+	h.printOut(entryNum)
+}
+
+func (h *PwdRemoveHandler) getFlagValues(
+	v command.ValueGetter,
+) (e int, err error) {
+	var errs []error
+	e, err = handler.GetEnryNumValue(v)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	err = handler.RequiredFlagsErr(errs)
+	return e, err
+}
+
+func (h *PwdRemoveHandler) printOut(entryNum int) {
+	fmt.Fprintf(
+		h.w,
+		"the password under the record number %d was removed\n",
+		entryNum,
+	)
 }
