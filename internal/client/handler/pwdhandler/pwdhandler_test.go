@@ -12,6 +12,7 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
+	"github.com/niksmo/gophkeeper/internal/client/handler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
 	"github.com/niksmo/gophkeeper/internal/client/service"
 	"github.com/niksmo/gophkeeper/pkg/logger"
@@ -94,7 +95,7 @@ type addSuite struct {
 	log         logger.Logger
 	service     *pwdAddService
 	valueGetter *valueGetter
-	handler     *pwdhandler.PwdAddHandler
+	handler     *handler.AddHandler[pwdhandler.AddFlags, dto.PWD]
 	w           io.Writer
 	t           *testing.T
 }
@@ -362,7 +363,7 @@ type readSuite struct {
 	log         logger.Logger
 	service     *pwdReadService
 	valueGetter *valueGetter
-	handler     *pwdhandler.PwdReadHandler
+	handler     *handler.ReadHandler[pwdhandler.ReadFlags, dto.PWD]
 	w           io.Writer
 	t           *testing.T
 }
@@ -609,7 +610,7 @@ func TestRead(t *testing.T) {
 
 		expectedExitCode := 0
 		expectedOut := fmt.Sprintf(
-			"the password with entry number %d is not exists\nPASS\n",
+			"the password with entry number %d is not exists\n",
 			id,
 		)
 
@@ -624,7 +625,7 @@ func TestRead(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
 
-		actualOut := buf.String()
+		actualOut, _ := buf.ReadString('\n')
 		assert.Equal(t, expectedOut, actualOut)
 	})
 
@@ -693,7 +694,7 @@ type listSuite struct {
 	log         logger.Logger
 	service     *pwdListService
 	valueGetter *valueGetter
-	handler     *pwdhandler.PwdListHandler
+	handler     *handler.ListHandler
 	w           io.Writer
 	t           *testing.T
 }
@@ -750,7 +751,7 @@ func TestList(t *testing.T) {
 		st := newListSuite(t, buf)
 		defer st.PrettyPanic()
 		expectedExitCode := 0
-		expectedOut := "there are no saved passwords\nPASS\n"
+		expectedOut := "there are no saved passwords\n"
 
 		cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 		cmd.Env = append(
@@ -762,7 +763,7 @@ func TestList(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
 
-		actualOut := buf.String()
+		actualOut, _ := buf.ReadString('\n')
 		assert.Equal(t, expectedOut, actualOut)
 
 	})
@@ -814,7 +815,7 @@ type editSuite struct {
 	log         logger.Logger
 	service     *pwdEditService
 	valueGetter *valueGetter
-	handler     *pwdhandler.PwdEditHandler
+	handler     *handler.EditHandler[pwdhandler.EditFlags, dto.PWD]
 	w           io.Writer
 	t           *testing.T
 }
@@ -1129,7 +1130,7 @@ func TestEdit(t *testing.T) {
 
 		expectedExitCode := 0
 		expectedOut := fmt.Sprintf(
-			"the password with entry number %d is not exists\nPASS\n",
+			"the password with entry number %d is not exists\n",
 			id,
 		)
 
@@ -1144,7 +1145,7 @@ func TestEdit(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
 
-		actualOut := buf.String()
+		actualOut, _ := buf.ReadString('\n')
 		assert.Equal(t, expectedOut, actualOut)
 	})
 
@@ -1225,7 +1226,7 @@ type removeSuite struct {
 	log         logger.Logger
 	service     *pwdRemoveService
 	valueGetter *valueGetter
-	handler     *pwdhandler.PwdRemoveHandler
+	handler     *handler.RemoveHandler[pwdhandler.RemoveFlags]
 	w           io.Writer
 	t           *testing.T
 }
@@ -1330,7 +1331,7 @@ func TestRemove(t *testing.T) {
 
 		expectedExitCode := 0
 		expectedOut := fmt.Sprintf(
-			"the password with entry number %d is not exists\nPASS\n",
+			"the password with entry number %d is not exists\n",
 			id,
 		)
 
@@ -1345,7 +1346,7 @@ func TestRemove(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expectedExitCode, cmd.ProcessState.ExitCode())
 
-		actualOut := buf.String()
+		actualOut, _ := buf.ReadString('\n')
 		assert.Equal(t, expectedOut, actualOut)
 	})
 
