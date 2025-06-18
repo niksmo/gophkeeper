@@ -10,8 +10,10 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository/pwdrepository"
 	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/readservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/removeservice.go"
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
@@ -52,12 +54,32 @@ func New(logLevel, dsn string) *App {
 		logger, pwdListService, os.Stdout,
 	)
 
+	pwdEditService := editservice.New[dto.PWD](
+		logger, pwdRepository, encoder, encrypter,
+	)
+	pwdEditHandler := pwdhandler.NewEditHandler(
+		logger, pwdEditService, os.Stdout,
+	)
+
+	pwdRemoveService := removeservice.New(logger, pwdRepository)
+	pwdRemoveHandler := pwdhandler.NewRemoveHandler(
+		logger, pwdRemoveService, os.Stdout,
+	)
+
 	pwdAddCommand := pwdcommand.NewPwdAddCommand(pwdAddHandler)
 	pwdReadCommand := pwdcommand.NewPwdReadCommand(pwdReadHandler)
 	pwdListCommand := pwdcommand.NewPwdListCommand(pwdListHandler)
+	pwdEditCommand := pwdcommand.NewPwdEditCommand(pwdEditHandler)
+	pwdRemoveCommand := pwdcommand.NewPwdRemoveCommand(pwdRemoveHandler)
 
 	pwdCommand := pwdcommand.NewPwdCommand()
-	pwdCommand.AddCommand(pwdAddCommand, pwdReadCommand, pwdListCommand)
+	pwdCommand.AddCommand(
+		pwdAddCommand,
+		pwdReadCommand,
+		pwdListCommand,
+		pwdEditCommand,
+		pwdRemoveCommand,
+	)
 
 	cmdRoot := command.NewRootCommand()
 	cmdRoot.AddCommand(pwdCommand)
