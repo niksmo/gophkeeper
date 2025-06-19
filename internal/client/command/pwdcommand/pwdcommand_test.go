@@ -33,7 +33,7 @@ func (st *suite) SetArgs(args []string) {
 func newAddSuite(t *testing.T) *suite {
 	ctx := context.Background()
 	h := new(handler)
-	cmd := pwdcommand.NewPwdAddCommand(h)
+	cmd := pwdcommand.NewAdd(h)
 	args := os.Args
 	t.Cleanup(func() {
 		os.Args = args
@@ -87,7 +87,7 @@ func TestAdd(t *testing.T) {
 func newReadSuite(t *testing.T) *suite {
 	ctx := context.Background()
 	h := new(handler)
-	cmd := pwdcommand.NewPwdReadCommand(h)
+	cmd := pwdcommand.NewRead(h)
 	args := os.Args
 	t.Cleanup(func() {
 		os.Args = args
@@ -135,7 +135,7 @@ func TestRead(t *testing.T) {
 func newListSuite(t *testing.T) *suite {
 	ctx := context.Background()
 	h := new(handler)
-	cmd := pwdcommand.NewPwdListCommand(h)
+	cmd := pwdcommand.NewList(h)
 	args := os.Args
 	t.Cleanup(func() {
 		os.Args = args
@@ -158,7 +158,7 @@ func TestList(t *testing.T) {
 func newEditSuite(t *testing.T) *suite {
 	ctx := context.Background()
 	h := new(handler)
-	cmd := pwdcommand.NewPwdEditCommand(h)
+	cmd := pwdcommand.NewEdit(h)
 	args := os.Args
 	t.Cleanup(func() {
 		os.Args = args
@@ -214,7 +214,7 @@ func TestEdit(t *testing.T) {
 func newRemoveSuite(t *testing.T) *suite {
 	ctx := context.Background()
 	h := new(handler)
-	cmd := pwdcommand.NewPwdRemoveCommand(h)
+	cmd := pwdcommand.NewRemove(h)
 	args := os.Args
 	t.Cleanup(func() {
 		os.Args = args

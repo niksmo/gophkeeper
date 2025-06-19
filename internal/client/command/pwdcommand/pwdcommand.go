@@ -35,7 +35,7 @@ const (
 	loginUsage     = "account login"
 )
 
-func NewPwdCommand() *command.Command {
+func New() *command.Command {
 	c := &cobra.Command{
 		Use:   "password",
 		Short: "Use the password command to save your accounts",
@@ -43,7 +43,7 @@ func NewPwdCommand() *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewPwdAddCommand(h command.Handler) *command.Command {
+func NewAdd(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "add",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -66,7 +66,7 @@ func NewPwdAddCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewPwdReadCommand(h command.Handler) *command.Command {
+func NewRead(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "read",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -84,7 +84,7 @@ func NewPwdReadCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewPwdListCommand(h command.Handler) *command.Command {
+func NewList(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "list",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -94,7 +94,7 @@ func NewPwdListCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewPwdEditCommand(h command.Handler) *command.Command {
+func NewEdit(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "edit",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -124,7 +124,7 @@ func NewPwdEditCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewPwdRemoveCommand(h command.Handler) *command.Command {
+func NewRemove(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "remove",
 		Run: func(cmd *cobra.Command, args []string) {

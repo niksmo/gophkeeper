@@ -22,7 +22,7 @@ type AddFlags struct {
 	dto.BIN
 }
 
-func NewAddHandler(
+func NewAdd(
 	l logger.Logger, s handler.AddService[dto.BIN], w io.Writer,
 ) *handler.AddHandler[AddFlags, dto.BIN] {
 	h := &handler.AddHandler[AddFlags, dto.BIN]{
@@ -74,7 +74,7 @@ type ReadFlags struct {
 	EntryNum      int
 }
 
-func NewReadHandler(
+func NewRead(
 	l logger.Logger, s handler.ReadService[dto.BIN], w io.Writer,
 ) *handler.ReadHandler[ReadFlags, dto.BIN] {
 	h := &handler.ReadHandler[ReadFlags, dto.BIN]{
@@ -110,8 +110,8 @@ func NewReadHandler(
 		var strBuilder strings.Builder
 		strBuilder.WriteString(
 			fmt.Sprintf(
-				"the binary data with entry %d: name=%q, ext=%q\n",
-				entryNum, dto.Name, dto.Ext,
+				"the binary data with entry %d: name=%q size=%d ext=%q \n",
+				entryNum, dto.Name, len(dto.Data), dto.Ext,
 			))
 
 		err := writeData(flags.Filepath, dto.Data)
@@ -122,6 +122,110 @@ func NewReadHandler(
 		}
 
 		return strBuilder.String()
+	}
+
+	return h
+}
+
+func NewList(
+	l logger.Logger, s handler.ListService, w io.Writer,
+) *handler.ListHandler {
+	return &handler.ListHandler{
+		Log:        l,
+		Service:    s,
+		Writer:     w,
+		Name:       handlerName,
+		NamePlural: "binaries",
+	}
+}
+
+type EditFlags struct {
+	Key      string
+	EntryNum int
+	dto.BIN
+}
+
+func NewEdit(
+	l logger.Logger, s handler.EditService[dto.BIN], w io.Writer,
+) *handler.EditHandler[EditFlags, dto.BIN] {
+	h := &handler.EditHandler[EditFlags, dto.BIN]{
+		Log:     l,
+		Service: s,
+		Writer:  w,
+		Name:    handlerName,
+	}
+
+	h.GetFlagsHook = func(v command.ValueGetter) (EditFlags, error) {
+		var errs []error
+		key, err := handler.GetMasterKeyValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		entryNum, err := handler.GetEnryNumValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		name, err := handler.GetNameValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		filepath, err := getFilePathValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		err = handler.RequiredFlagsErr(errs)
+
+		if err != nil {
+			return EditFlags{}, err
+		}
+
+		dto, err := getBinDto(name, filepath)
+		if err != nil {
+			return EditFlags{}, err
+		}
+
+		return EditFlags{key, entryNum, dto}, err
+	}
+
+	h.GetServiceArgsHook = func(
+		f EditFlags,
+	) (key string, entryNum int, name string, dto dto.BIN) {
+		return f.Key, f.EntryNum, f.Name, f.BIN
+	}
+
+	return h
+}
+
+type RemoveFlags struct {
+	EntryNum int
+}
+
+func NewRemove(
+	l logger.Logger, s handler.RemoveService, w io.Writer,
+) *handler.RemoveHandler[RemoveFlags] {
+	h := &handler.RemoveHandler[RemoveFlags]{
+		Log:     l,
+		Service: s,
+		Writer:  w,
+		Name:    handlerName,
+	}
+	h.GetFlagsHook = func(v command.ValueGetter) (RemoveFlags, error) {
+		var errs []error
+		entryNum, err := handler.GetEnryNumValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		err = handler.RequiredFlagsErr(errs)
+		return RemoveFlags{entryNum}, err
+	}
+
+	h.GetServiceArgsHook = func(f RemoveFlags) (entryNum int) {
+		return f.EntryNum
 	}
 
 	return h

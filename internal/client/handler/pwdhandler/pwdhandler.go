@@ -18,7 +18,7 @@ type AddFlags struct {
 	dto.PWD
 }
 
-func NewAddHandler(
+func NewAdd(
 	l logger.Logger, s handler.AddService[dto.PWD], w io.Writer,
 ) *handler.AddHandler[AddFlags, dto.PWD] {
 	h := &handler.AddHandler[AddFlags, dto.PWD]{
@@ -62,7 +62,7 @@ type ReadFlags struct {
 	EntryNum int
 }
 
-func NewReadHandler(
+func NewRead(
 	l logger.Logger, s handler.ReadService[dto.PWD], w io.Writer,
 ) *handler.ReadHandler[ReadFlags, dto.PWD] {
 	h := &handler.ReadHandler[ReadFlags, dto.PWD]{
@@ -94,7 +94,7 @@ func NewReadHandler(
 
 	h.GetOutputHook = func(_ ReadFlags, entryNum int, dto dto.PWD) string {
 		return fmt.Sprintf(
-			"the password with entry %d: name=%q, login=%q, password=%q\n",
+			"the password with entry %d: name=%q login=%q password=%q\n",
 			entryNum, dto.Name, dto.Login, dto.Password,
 		)
 	}
@@ -102,7 +102,7 @@ func NewReadHandler(
 	return h
 }
 
-func NewListHandler(
+func NewList(
 	l logger.Logger, s handler.ListService, w io.Writer,
 ) *handler.ListHandler {
 	return &handler.ListHandler{
@@ -120,7 +120,7 @@ type EditFlags struct {
 	dto.PWD
 }
 
-func NewEditHandler(
+func NewEdit(
 	l logger.Logger, s handler.EditService[dto.PWD], w io.Writer,
 ) *handler.EditHandler[EditFlags, dto.PWD] {
 	h := &handler.EditHandler[EditFlags, dto.PWD]{
@@ -177,7 +177,7 @@ type RemoveFlags struct {
 	EntryNum int
 }
 
-func NewRemoveHandler(
+func NewRemove(
 	l logger.Logger, s handler.RemoveService, w io.Writer,
 ) *handler.RemoveHandler[RemoveFlags] {
 	h := &handler.RemoveHandler[RemoveFlags]{

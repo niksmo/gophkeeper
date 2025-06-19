@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const logLvl = "debug"
+
 // *Tests Mocks*
 
 type valueGetter struct {
@@ -102,10 +104,10 @@ type addSuite struct {
 
 func newAddSuite(t *testing.T, w io.Writer) *addSuite {
 	ctx := context.Background()
-	log := logger.NewPretty("debug")
+	log := logger.NewPretty(logLvl)
 	service := &pwdAddService{}
 	valueGetter := &valueGetter{}
-	handler := pwdhandler.NewAddHandler(log, service, w)
+	handler := pwdhandler.NewAdd(log, service, w)
 	return &addSuite{ctx, log, service, valueGetter, handler, w, t}
 }
 
@@ -370,10 +372,10 @@ type readSuite struct {
 
 func newReadSuite(t *testing.T, w io.Writer) *readSuite {
 	ctx := context.Background()
-	log := logger.NewPretty("debug")
+	log := logger.NewPretty(logLvl)
 	service := &pwdReadService{}
 	valueGetter := &valueGetter{}
-	handler := pwdhandler.NewReadHandler(log, service, w)
+	handler := pwdhandler.NewRead(log, service, w)
 	return &readSuite{ctx, log, service, valueGetter, handler, w, t}
 }
 
@@ -398,7 +400,7 @@ func TestRead(t *testing.T) {
 			Password: "testPassword",
 		}
 		expectedOut := fmt.Sprintf(
-			"the password with entry %d: name=%q, login=%q, password=%q\n",
+			"the password with entry %d: name=%q login=%q password=%q\n",
 			id, obj.Name, obj.Login, obj.Password,
 		)
 
@@ -701,10 +703,10 @@ type listSuite struct {
 
 func newListSuite(t *testing.T, w io.Writer) *listSuite {
 	ctx := context.Background()
-	log := logger.NewPretty("debug")
+	log := logger.NewPretty(logLvl)
 	service := &pwdListService{}
 	valueGetter := &valueGetter{}
-	handler := pwdhandler.NewListHandler(log, service, w)
+	handler := pwdhandler.NewList(log, service, w)
 	return &listSuite{ctx, log, service, valueGetter, handler, w, t}
 }
 
@@ -822,10 +824,10 @@ type editSuite struct {
 
 func newEditSuite(t *testing.T, w io.Writer) *editSuite {
 	ctx := context.Background()
-	log := logger.NewPretty("debug")
+	log := logger.NewPretty(logLvl)
 	service := &pwdEditService{}
 	valueGetter := &valueGetter{}
-	handler := pwdhandler.NewEditHandler(log, service, w)
+	handler := pwdhandler.NewEdit(log, service, w)
 	return &editSuite{ctx, log, service, valueGetter, handler, w, t}
 }
 
@@ -1233,10 +1235,10 @@ type removeSuite struct {
 
 func newRemoveSuite(t *testing.T, w io.Writer) *removeSuite {
 	ctx := context.Background()
-	log := logger.NewPretty("debug")
+	log := logger.NewPretty(logLvl)
 	service := &pwdRemoveService{}
 	valueGetter := &valueGetter{}
-	handler := pwdhandler.NewRemoveHandler(log, service, w)
+	handler := pwdhandler.NewRemove(log, service, w)
 	return &removeSuite{ctx, log, service, valueGetter, handler, w, t}
 }
 

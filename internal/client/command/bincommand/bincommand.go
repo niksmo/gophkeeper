@@ -19,7 +19,7 @@ const (
 
 	nameShorthand = command.NameShorthand
 	nameDefault   = command.NameDefault
-	nameUsage     = "title for stored file data (required)"
+	nameUsage     = "name for stored file data (required)"
 
 	entryNumShorthand = command.EntryNumShorthand
 	entryNumDefault   = command.EntryNumDefault
@@ -31,7 +31,7 @@ const (
 	writeFilepathUsage = "path to file for write data"
 )
 
-func NewBinCommand() *command.Command {
+func New() *command.Command {
 	c := &cobra.Command{
 		Use:   "binary",
 		Short: "Use the binary command to save your files data",
@@ -39,7 +39,7 @@ func NewBinCommand() *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewBinAddCommand(h command.Handler) *command.Command {
+func NewAdd(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "add",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -65,7 +65,7 @@ func NewBinAddCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewBinReadCommand(h command.Handler) *command.Command {
+func NewRead(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "read",
 		Example: "gophkeeper binary read -k 'key' -e 7 -f '/folder/to/file.ext'" +
@@ -89,7 +89,7 @@ func NewBinReadCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewBinListCommand(h command.Handler) *command.Command {
+func NewList(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "list",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -99,7 +99,7 @@ func NewBinListCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewBinEditCommand(h command.Handler) *command.Command {
+func NewEdit(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "edit",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -130,7 +130,7 @@ func NewBinEditCommand(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewBinRemoveCommand(h command.Handler) *command.Command {
+func NewRemove(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "remove",
 		Run: func(cmd *cobra.Command, args []string) {

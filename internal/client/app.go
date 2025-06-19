@@ -62,45 +62,57 @@ func (a *App) registerCommands() {
 }
 
 func (a *App) getPasswordCommand() *command.Command {
-	repo := repository.NewPwdRepository(a.log, a.storage)
+	repo := repository.NewPwd(a.log, a.storage)
 
 	addS := addservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
-	addH := pwdhandler.NewAddHandler(a.log, addS, os.Stdout)
-	addC := pwdcommand.NewPwdAddCommand(addH)
+	addH := pwdhandler.NewAdd(a.log, addS, os.Stdout)
+	addC := pwdcommand.NewAdd(addH)
 
 	readS := readservice.New[dto.PWD](a.log, repo, a.decoder, a.decrypter)
-	readH := pwdhandler.NewReadHandler(a.log, readS, os.Stdout)
-	readC := pwdcommand.NewPwdReadCommand(readH)
+	readH := pwdhandler.NewRead(a.log, readS, os.Stdout)
+	readC := pwdcommand.NewRead(readH)
 
 	listS := listservice.New(a.log, repo)
-	listH := pwdhandler.NewListHandler(a.log, listS, os.Stdout)
-	listC := pwdcommand.NewPwdListCommand(listH)
+	listH := pwdhandler.NewList(a.log, listS, os.Stdout)
+	listC := pwdcommand.NewList(listH)
 
 	editS := editservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
-	editH := pwdhandler.NewEditHandler(a.log, editS, os.Stdout)
-	editC := pwdcommand.NewPwdEditCommand(editH)
+	editH := pwdhandler.NewEdit(a.log, editS, os.Stdout)
+	editC := pwdcommand.NewEdit(editH)
 
 	removeS := removeservice.New(a.log, repo)
-	removeH := pwdhandler.NewRemoveHandler(a.log, removeS, os.Stdout)
-	removeC := pwdcommand.NewPwdRemoveCommand(removeH)
+	removeH := pwdhandler.NewRemove(a.log, removeS, os.Stdout)
+	removeC := pwdcommand.NewRemove(removeH)
 
-	passwordC := pwdcommand.NewPwdCommand()
+	passwordC := pwdcommand.New()
 	passwordC.AddCommand(addC, readC, listC, editC, removeC)
 	return passwordC
 }
 
 func (a *App) getBinaryCommand() *command.Command {
-	repo := repository.NewBinRepository(a.log, a.storage)
+	repo := repository.NewBin(a.log, a.storage)
 
 	addS := addservice.New[dto.BIN](a.log, repo, a.encoder, a.encrypter)
-	addH := binhandler.NewAddHandler(a.log, addS, os.Stdout)
-	addC := bincommand.NewBinAddCommand(addH)
+	addH := binhandler.NewAdd(a.log, addS, os.Stdout)
+	addC := bincommand.NewAdd(addH)
 
 	readS := readservice.New[dto.BIN](a.log, repo, a.decoder, a.decrypter)
-	readH := binhandler.NewReadHandler(a.log, readS, os.Stdout)
-	readC := bincommand.NewBinReadCommand(readH)
+	readH := binhandler.NewRead(a.log, readS, os.Stdout)
+	readC := bincommand.NewRead(readH)
 
-	binaryC := bincommand.NewBinCommand()
-	binaryC.AddCommand(addC, readC)
+	listS := listservice.New(a.log, repo)
+	listH := binhandler.NewList(a.log, listS, os.Stdout)
+	listC := bincommand.NewList(listH)
+
+	editS := editservice.New[dto.BIN](a.log, repo, a.encoder, a.encrypter)
+	editH := binhandler.NewEdit(a.log, editS, os.Stdout)
+	editC := bincommand.NewEdit(editH)
+
+	removeS := removeservice.New(a.log, repo)
+	removeH := binhandler.NewRemove(a.log, removeS, os.Stdout)
+	removeC := bincommand.NewRemove(removeH)
+
+	binaryC := bincommand.New()
+	binaryC.AddCommand(addC, readC, listC, editC, removeC)
 	return binaryC
 }

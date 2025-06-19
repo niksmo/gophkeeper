@@ -30,19 +30,19 @@ type (
 	}
 )
 
-func NewPwdRepository(l logger.Logger, db Storage) *Repository {
+func NewPwd(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "passwords"}
 }
 
-func NewCardRepository(l logger.Logger, db Storage) *Repository {
+func NewCard(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "cards"}
 }
 
-func NewTextRepository(l logger.Logger, db Storage) *Repository {
+func NewText(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "texts"}
 }
 
-func NewBinRepository(l logger.Logger, db Storage) *Repository {
+func NewBin(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "binaries"}
 }
 

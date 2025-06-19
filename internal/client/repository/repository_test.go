@@ -39,7 +39,7 @@ func newSuite(t *testing.T, newRepoFn repoConstructor) *suite {
 
 func TestAdd(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		expectedID := 1
 		expectedName := "testName"
 		expectedData := []byte("helloWorld")
@@ -69,7 +69,7 @@ func TestAdd(t *testing.T) {
 	})
 
 	t.Run("UniqueNameConstraintErr", func(t *testing.T) {
-		st := newSuite(t, repository.NewBinRepository)
+		st := newSuite(t, repository.NewBin)
 		objectName := "testName"
 		objectData := []byte("testData")
 		expectedID := 1
@@ -84,7 +84,7 @@ func TestAdd(t *testing.T) {
 
 func TestReadByID(t *testing.T) {
 	t.Run("ExistsID", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		stmt := `
 		INSERT INTO
 		  passwords (name, data, created_at, updated_at)
@@ -106,7 +106,7 @@ func TestReadByID(t *testing.T) {
 	})
 
 	t.Run("NotExistsID", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		stmt := `
 		INSERT INTO
 		  passwords (name, data, created_at, updated_at)
@@ -128,7 +128,7 @@ func TestReadByID(t *testing.T) {
 	})
 
 	t.Run("ExistsIDButDeleted", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		stmt := `
 		INSERT INTO
 		  passwords (name, data, created_at, updated_at, deleted)
@@ -161,7 +161,7 @@ func TestListNames(t *testing.T) {
 	}
 
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		stmt, err := st.s.PrepareContext(
 			st.ctx,
 			`INSERT INTO
@@ -208,7 +208,7 @@ func TestListNames(t *testing.T) {
 	})
 
 	t.Run("HaveDeleted", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		stmt, err := st.s.PrepareContext(
 			st.ctx,
 			`INSERT INTO
@@ -255,7 +255,7 @@ func TestListNames(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 
 		insertName := "insertName"
 		insertData := []byte("insertData")
@@ -290,7 +290,7 @@ func TestUpdate(t *testing.T) {
 	})
 
 	t.Run("NotExistsEntry", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		entryNum := 1
 		updateName := "updateName"
 		updateData := []byte("updateData")
@@ -301,7 +301,7 @@ func TestUpdate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 
 		insertName := "insertName"
 		insertData := []byte("insertData")
@@ -338,7 +338,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("NotExistsEntry", func(t *testing.T) {
-		st := newSuite(t, repository.NewPwdRepository)
+		st := newSuite(t, repository.NewPwd)
 		entryNum := 1
 		err := st.r.Delete(st.ctx, entryNum)
 		assert.ErrorIs(t, err, repository.ErrNotExists)
