@@ -10,13 +10,13 @@ func init0(ctx context.Context, s Storage) error {
 	BEGIN;
 	CREATE TABLE IF NOT EXISTS migrations (
 	id INTEGER PRIMARY KEY,
-	name TEXT NOT NULL,
+	name TEXT,
 	created_at TIMESTAMP NOT NULL 
 	);
 
 	CREATE TABLE IF NOT EXISTS passwords (
 	id INTEGER PRIMARY KEY,
-	name TEXT NOT NULL,
+	name TEXT,
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
@@ -25,7 +25,7 @@ func init0(ctx context.Context, s Storage) error {
 
 	CREATE TABLE IF NOT EXISTS cards (
 	id INTEGER PRIMARY KEY,
-	name TEXT NOT NULL UNIQUE,
+	name TEXT UNIQUE,
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
@@ -34,7 +34,7 @@ func init0(ctx context.Context, s Storage) error {
 
 	CREATE TABLE IF NOT EXISTS texts (
 	id INTEGER PRIMARY KEY,
-	name TEXT NOT NULL UNIQUE,
+	name TEXT UNIQUE,
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
@@ -43,7 +43,7 @@ func init0(ctx context.Context, s Storage) error {
 	
 	CREATE TABLE IF NOT EXISTS binaries (
 	id INTEGER PRIMARY KEY,
-	name TEXT NOT NULL UNIQUE,
+	name TEXT UNIQUE,
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,

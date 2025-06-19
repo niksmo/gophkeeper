@@ -8,10 +8,12 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/command/bincommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/cardcommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
+	"github.com/niksmo/gophkeeper/internal/client/command/textcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler/binhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/cardhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
+	"github.com/niksmo/gophkeeper/internal/client/handler/texthandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
@@ -61,6 +63,7 @@ func (a *App) registerCommands() {
 		a.getPasswordCommand(),
 		a.getBinaryCommand(),
 		a.getCardCommand(),
+		a.getTextCommand(),
 	)
 }
 
@@ -146,4 +149,32 @@ func (a *App) getCardCommand() *command.Command {
 	cardC := cardcommand.New()
 	cardC.AddCommand(addC, readC, listC, editC, removeC)
 	return cardC
+}
+
+func (a *App) getTextCommand() *command.Command {
+	repo := repository.NewText(a.log, a.storage)
+
+	addS := addservice.New[dto.Text](a.log, repo, a.encoder, a.encrypter)
+	addH := texthandler.NewAdd(a.log, addS, os.Stdout)
+	addC := textcommand.NewAdd(addH)
+
+	readS := readservice.New[dto.Text](a.log, repo, a.decoder, a.decrypter)
+	readH := texthandler.NewRead(a.log, readS, os.Stdout)
+	readC := textcommand.NewRead(readH)
+
+	listS := listservice.New(a.log, repo)
+	listH := texthandler.NewList(a.log, listS, os.Stdout)
+	listC := textcommand.NewList(listH)
+
+	editS := editservice.New[dto.Text](a.log, repo, a.encoder, a.encrypter)
+	editH := texthandler.NewEdit(a.log, editS, os.Stdout)
+	editC := textcommand.NewEdit(editH)
+
+	removeS := removeservice.New(a.log, repo)
+	removeH := texthandler.NewRemove(a.log, removeS, os.Stdout)
+	removeC := textcommand.NewRemove(removeH)
+
+	textC := textcommand.New()
+	textC.AddCommand(addC, readC, listC, editC, removeC)
+	return textC
 }

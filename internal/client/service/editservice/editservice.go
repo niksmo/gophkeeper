@@ -62,6 +62,10 @@ func (s *EditService[T]) Edit(
 	data := s.encrypter.Encrypt(b)
 
 	if err = s.r.Update(ctx, entryNum, name, data); err != nil {
+		if errors.Is(err, repository.ErrAlreadyExists) {
+			log.Debug().Str("name", name).Msg("object already exists")
+			return service.ErrAlreadyExists
+		}
 		if errors.Is(err, repository.ErrNotExists) {
 			log.Debug().Str("name", name).Msg("object not exists")
 			return service.ErrNotExists

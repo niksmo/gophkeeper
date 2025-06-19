@@ -148,6 +148,10 @@ func (r *Repository) Update(
 		ctx, stmt, name, data, time.Now(), entryNum,
 	).Scan(&id)
 	if err != nil {
+		if IsSQLiteEniqueErr(err) {
+			log.Debug().Err(err).Msg("object already exists")
+			return fmt.Errorf("%s: %w", op, ErrAlreadyExists)
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Debug().Err(err).Msg("object is not exists")
 			return fmt.Errorf("%s: %w", op, ErrNotExists)
@@ -164,7 +168,7 @@ func (r Repository) Delete(ctx context.Context, entryNum int) error {
 
 	stmt := fmt.Sprintf(`
 	UPDATE %s SET
-	  name='', data=NULL, updated_at=?, deleted=TRUE
+	  name=NULL, data=NULL, updated_at=?, deleted=TRUE
 	WHERE id=? RETURNING id;`,
 		r.table,
 	)

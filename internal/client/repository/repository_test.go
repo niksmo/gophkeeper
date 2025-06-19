@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
@@ -320,7 +321,7 @@ func TestDelete(t *testing.T) {
 		err = st.r.Delete(st.ctx, entryNum)
 		require.NoError(t, err)
 
-		var actualName string
+		var actualName sql.NullString
 		var actualData []byte
 		var actualUpdatedAt time.Time
 		var actualDeleted bool
@@ -330,8 +331,7 @@ func TestDelete(t *testing.T) {
 		require.NoError(t, err)
 
 		var expectedData []byte
-		var expectedName string
-		assert.Equal(t, expectedName, actualName)
+		assert.False(t, actualName.Valid)
 		assert.Equal(t, expectedData, actualData)
 		assert.True(t, actualDeleted)
 		assert.Less(t, insertTime, actualUpdatedAt)

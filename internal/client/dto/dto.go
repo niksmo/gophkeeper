@@ -18,3 +18,8 @@ type BankCard struct {
 	ExpDate string
 	CVC     string
 }
+
+type Text struct {
+	Name string
+	Data string
+}

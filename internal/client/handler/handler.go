@@ -11,6 +11,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/service"
 	"github.com/niksmo/gophkeeper/pkg/logger"
+	"github.com/rs/zerolog"
 )
 
 type (
@@ -63,17 +64,14 @@ func (h *AddHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 
 	entryNum, err := h.Service.Add(ctx, key, name, dto)
 	if err != nil {
-		if errors.Is(err, service.ErrAlreadyExists) {
-			log.Debug().Err(err).Msg("object already exists")
-			fmt.Fprintf(
-				h.Writer, "%s with name '%s' already exists\n",
-				h.Name, name,
-			)
+		switch {
+		case handleAlreadyExists(log, h.Writer, h.Name, name, err):
 			return
+		default:
+			log.Debug().Err(err).Msg(fmt.Sprintf("failed to add %s", h.Name))
+			InternalError(h.Writer, err)
+			os.Exit(1)
 		}
-		log.Debug().Err(err).Msg(fmt.Sprintf("failed to add %s", h.Name))
-		InternalError(h.Writer, err)
-		os.Exit(1)
 	}
 
 	h.printOut(entryNum)
@@ -113,24 +111,16 @@ func (h *ReadHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 
 	dto, err := h.Service.Read(ctx, key, entryNum)
 	if err != nil {
-		if errors.Is(err, service.ErrNotExists) {
-			log.Debug().Err(err).Int("id", entryNum).Msg("not exists")
-			fmt.Fprintf(
-				h.Writer,
-				"the %s with entry number %d is not exists\n",
-				h.Name, entryNum,
-			)
+		switch {
+		case handleNotExists(log, h.Writer, h.Name, entryNum, err):
 			return
-		}
-		if errors.Is(err, service.ErrInvalidKey) {
-			log.Debug().Err(err).Msg("invalid key")
-			fmt.Fprintln(h.Writer, err.Error())
+		case handleInvalidKey(log, h.Writer, err):
+			os.Exit(1)
+		default:
+			log.Debug().Err(err).Msg(fmt.Sprintf("failed to read %s", h.Name))
+			InternalError(h.Writer, err)
 			os.Exit(1)
 		}
-
-		log.Debug().Err(err).Msg(fmt.Sprintf("failed to read %s", h.Name))
-		InternalError(h.Writer, err)
-		os.Exit(1)
 	}
 
 	h.printOut(flags, entryNum, dto)
@@ -154,25 +144,25 @@ func (h *ListHandler) Handle(ctx context.Context, v command.ValueGetter) {
 
 	idNamePairs, err := h.Service.List(ctx)
 	if err != nil {
-		log.Debug().Err(err).Msg(fmt.Sprintf("failed to list %s names", h.Name))
+		log.Debug().Str("handler", h.Name).Err(err).Msg("failed to list names")
 		InternalError(h.Writer, err)
 		os.Exit(1)
 	}
 	h.printOut(idNamePairs)
-
 }
+
 func (h *ListHandler) printOut(data [][2]string) {
 	if len(data) == 0 {
 		fmt.Fprintf(h.Writer, "there are no saved %s\n", h.NamePlural)
 		return
 	}
 
-	var out strings.Builder
+	var b strings.Builder
 	for _, v := range data {
 		entry, name := v[0], v[1]
-		out.WriteString(fmt.Sprintf("\n%s: %s", entry, name))
+		b.WriteString(fmt.Sprintf("\n%s: %s", entry, name))
 	}
-	fmt.Fprintf(h.Writer, "saved %s names:%s\n", h.NamePlural, out.String())
+	fmt.Fprintf(h.Writer, "saved %s names:%s\n", h.NamePlural, b.String())
 }
 
 // EditHandler
@@ -200,23 +190,16 @@ func (h *EditHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 
 	err = h.Service.Edit(ctx, key, entryNum, name, dto)
 	if err != nil {
-		if errors.Is(err, service.ErrNotExists) {
-			log.Debug().Err(err).Int("id", entryNum).Msg("not exists")
-			fmt.Fprintf(
-				h.Writer,
-				"the %s with entry number %d is not exists\n",
-				h.Name, entryNum,
-			)
+		switch {
+		case handleAlreadyExists(log, h.Writer, h.Name, name, err):
 			return
-		}
-		if errors.Is(err, service.ErrInvalidKey) {
-			log.Debug().Err(err).Msg("invalid key")
-			fmt.Fprintln(h.Writer, err.Error())
+		case handleNotExists(log, h.Writer, h.Name, entryNum, err):
+			return
+		default:
+			log.Debug().Err(err).Msg(fmt.Sprintf("failed to edit %s", h.Name))
+			InternalError(h.Writer, err)
 			os.Exit(1)
 		}
-		log.Debug().Err(err).Msg(fmt.Sprintf("failed to edit %s", h.Name))
-		InternalError(h.Writer, err)
-		os.Exit(1)
 	}
 
 	h.printOut(entryNum)
@@ -254,18 +237,14 @@ func (h *RemoveHandler[F]) Handle(ctx context.Context, v command.ValueGetter) {
 	entryNum := h.GetServiceArgsHook(flags)
 	err = h.Service.Remove(ctx, entryNum)
 	if err != nil {
-		if errors.Is(err, service.ErrNotExists) {
-			log.Debug().Err(err).Int("id", entryNum).Msg("not exists")
-			fmt.Fprintf(
-				h.Writer,
-				"the %s with entry number %d is not exists\n",
-				h.Name, entryNum,
-			)
+		switch {
+		case handleNotExists(log, h.Writer, h.Name, entryNum, err):
 			return
+		default:
+			log.Debug().Err(err).Msg(fmt.Sprintf("failed to remove %s", h.Name))
+			InternalError(h.Writer, err)
+			os.Exit(1)
 		}
-		log.Debug().Err(err).Msg(fmt.Sprintf("failed to remove %s", h.Name))
-		InternalError(h.Writer, err)
-		os.Exit(1)
 	}
 
 	h.printOut(entryNum)
@@ -325,4 +304,44 @@ func InternalError(w io.Writer, err error) {
 		"the application completed with an error: %s\n",
 		err.Error(),
 	)
+}
+
+func handleAlreadyExists(
+	l zerolog.Logger, w io.Writer, hName, oName string, err error,
+) bool {
+	if !errors.Is(err, service.ErrAlreadyExists) {
+		return false
+	}
+
+	l.Debug().Err(err).Msg("object already exists")
+	fmt.Fprintf(
+		w, "%s with name '%s' already exists\n",
+		hName, oName,
+	)
+	return true
+}
+
+func handleNotExists(
+	l zerolog.Logger, w io.Writer, hName string, entryNum int, err error,
+) bool {
+	if !errors.Is(err, service.ErrNotExists) {
+		return false
+	}
+
+	l.Debug().Err(err).Int("id", entryNum).Msg("not exists")
+	fmt.Fprintf(
+		w,
+		"the %s with entry number %d is not exists\n",
+		hName, entryNum,
+	)
+	return true
+}
+
+func handleInvalidKey(l zerolog.Logger, w io.Writer, err error) bool {
+	if !errors.Is(err, service.ErrInvalidKey) {
+		return false
+	}
+	l.Debug().Err(err).Msg("invalid key")
+	fmt.Fprintln(w, err.Error())
+	return true
 }
