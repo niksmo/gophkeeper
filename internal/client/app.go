@@ -13,7 +13,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/readservice"
-	"github.com/niksmo/gophkeeper/internal/client/service/removeservice.go"
+	"github.com/niksmo/gophkeeper/internal/client/service/removeservice"
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
@@ -21,8 +21,13 @@ import (
 )
 
 type App struct {
-	c *command.Command
-	s *storage.Storage
+	log       logger.Logger
+	cmd       *command.Command
+	storage   *storage.Storage
+	encoder   *encode.Encoder
+	decoder   *encode.Decoder
+	encrypter *cipher.Encrypter
+	decrypter *cipher.Decrypter
 }
 
 func New(logLevel, dsn string) *App {
@@ -33,63 +38,59 @@ func New(logLevel, dsn string) *App {
 	encrypter := cipher.NewEncrypter()
 	decrypter := cipher.NewDecrypter()
 
-	pwdRepository := repository.NewPwdRepository(logger, storage)
+	cmd := command.NewRootCommand()
 
-	pwdAddService := addservice.New[dto.PWD](
-		logger, pwdRepository, encoder, encrypter,
-	)
-	pwdAddHandler := pwdhandler.NewAddHandler(
-		logger, pwdAddService, os.Stdout,
-	)
+	app := &App{
+		logger,
+		cmd,
+		storage,
+		encoder, decoder,
+		encrypter, decrypter,
+	}
 
-	pwdReadService := readservice.New[dto.PWD](
-		logger, pwdRepository, decoder, decrypter,
-	)
-	pwdReadHandler := pwdhandler.NewReadHandler(
-		logger, pwdReadService, os.Stdout,
-	)
+	app.registerCommands()
 
-	pwdListService := listservice.New(logger, pwdRepository)
-	pwdListHandler := pwdhandler.NewListHandler(
-		logger, pwdListService, os.Stdout,
-	)
-
-	pwdEditService := editservice.New[dto.PWD](
-		logger, pwdRepository, encoder, encrypter,
-	)
-	pwdEditHandler := pwdhandler.NewEditHandler(
-		logger, pwdEditService, os.Stdout,
-	)
-
-	pwdRemoveService := removeservice.New(logger, pwdRepository)
-	pwdRemoveHandler := pwdhandler.NewRemoveHandler(
-		logger, pwdRemoveService, os.Stdout,
-	)
-
-	pwdAddCommand := pwdcommand.NewPwdAddCommand(pwdAddHandler)
-	pwdReadCommand := pwdcommand.NewPwdReadCommand(pwdReadHandler)
-	pwdListCommand := pwdcommand.NewPwdListCommand(pwdListHandler)
-	pwdEditCommand := pwdcommand.NewPwdEditCommand(pwdEditHandler)
-	pwdRemoveCommand := pwdcommand.NewPwdRemoveCommand(pwdRemoveHandler)
-
-	pwdCommand := pwdcommand.NewPwdCommand()
-	pwdCommand.AddCommand(
-		pwdAddCommand,
-		pwdReadCommand,
-		pwdListCommand,
-		pwdEditCommand,
-		pwdRemoveCommand,
-	)
-
-	cmdRoot := command.NewRootCommand()
-	cmdRoot.AddCommand(pwdCommand)
-
-	return &App{c: cmdRoot, s: storage}
+	return app
 }
 
-func (app *App) Run(ctx context.Context) {
-	app.s.MustRun(ctx)
-	if err := app.c.ExecuteContext(ctx); err != nil {
+func (a *App) Run(ctx context.Context) {
+	a.storage.MustRun(ctx)
+	if err := a.cmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
+}
+
+func (a *App) registerCommands() {
+	a.cmd.AddCommand(
+		a.getPasswordCommand(),
+	)
+}
+
+func (a *App) getPasswordCommand() *command.Command {
+	repo := repository.NewPwdRepository(a.log, a.storage)
+
+	addS := addservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
+	addH := pwdhandler.NewAddHandler(a.log, addS, os.Stdout)
+
+	readS := readservice.New[dto.PWD](a.log, repo, a.decoder, a.decrypter)
+	readH := pwdhandler.NewReadHandler(a.log, readS, os.Stdout)
+
+	listS := listservice.New(a.log, repo)
+	listH := pwdhandler.NewListHandler(a.log, listS, os.Stdout)
+
+	editS := editservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
+	editH := pwdhandler.NewEditHandler(a.log, editS, os.Stdout)
+
+	removeS := removeservice.New(a.log, repo)
+	removeH := pwdhandler.NewRemoveHandler(a.log, removeS, os.Stdout)
+
+	addC := pwdcommand.NewPwdAddCommand(addH)
+	readC := pwdcommand.NewPwdReadCommand(readH)
+	listC := pwdcommand.NewPwdListCommand(listH)
+	editC := pwdcommand.NewPwdEditCommand(editH)
+	removeC := pwdcommand.NewPwdRemoveCommand(removeH)
+
+	passwordC := pwdcommand.NewPwdCommand()
+	passwordC.AddCommand(addC, readC, listC, editC, removeC)
+	return passwordC
 }

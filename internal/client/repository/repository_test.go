@@ -1,4 +1,4 @@
-package pwdrepository_test
+package repository_test
 
 import (
 	"context"

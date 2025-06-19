@@ -283,14 +283,6 @@ func RequiredFlagsErr(errs []error) error {
 	return nil
 }
 
-func InternalError(w io.Writer, err error) {
-	fmt.Fprintf(
-		w,
-		"the application completed with an error: %s\n",
-		err.Error(),
-	)
-}
-
 func GetMasterKeyValue(v command.ValueGetter) (string, error) {
 	k, err := v.GetString(command.MasterKeyFlag)
 	if err != nil || IsZeroStr(k) {
@@ -317,4 +309,12 @@ func GetEnryNumValue(v command.ValueGetter) (int, error) {
 
 func IsZeroStr(s string) bool {
 	return len(strings.TrimSpace(s)) == 0
+}
+
+func InternalError(w io.Writer, err error) {
+	fmt.Fprintf(
+		w,
+		"the application completed with an error: %s\n",
+		err.Error(),
+	)
 }

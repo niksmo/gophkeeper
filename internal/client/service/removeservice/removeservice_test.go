@@ -7,7 +7,7 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service"
-	"github.com/niksmo/gophkeeper/internal/client/service/removeservice.go"
+	"github.com/niksmo/gophkeeper/internal/client/service/removeservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
