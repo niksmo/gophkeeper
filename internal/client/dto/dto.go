@@ -5,3 +5,9 @@ type PWD struct {
 	Login    string
 	Password string
 }
+
+type BIN struct {
+	Name string
+	Ext  string
+	Data []byte
+}

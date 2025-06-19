@@ -10,6 +10,17 @@ const (
 	MasterKeyFlag = "master-key"
 	NameFlag      = "name"
 	EntryNumFlag  = "entry"
+
+	MasterKeyShorthand = "k"
+	MasterKeyDefault   = ""
+	MasterKeyUsage     = "key for encrypting, decrypting" +
+		" and accessing to stored data (required)"
+
+	NameShorthand = "n"
+	NameDefault   = ""
+
+	EntryNumShorthand = "e"
+	EntryNumDefault   = 0
 )
 
 type (

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/mattn/go-sqlite3"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
@@ -17,31 +18,31 @@ var (
 )
 
 type (
-	storage interface {
+	Storage interface {
 		QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 		QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 	}
 
 	Repository struct {
 		l     logger.Logger
-		db    storage
+		db    Storage
 		table string
 	}
 )
 
-func NewPwdRepository(l logger.Logger, db storage) *Repository {
+func NewPwdRepository(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "passwords"}
 }
 
-func NewCardRepository(l logger.Logger, db storage) *Repository {
+func NewCardRepository(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "cards"}
 }
 
-func NewTextRepository(l logger.Logger, db storage) *Repository {
+func NewTextRepository(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "texts"}
 }
 
-func NewBinRepository(l logger.Logger, db storage) *Repository {
+func NewBinRepository(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "binaries"}
 }
 
@@ -61,7 +62,10 @@ func (r *Repository) Add(
 	t := time.Now()
 	err := r.db.QueryRowContext(ctx, stmt, name, data, t, t).Scan(&id)
 	if err != nil {
-		// TODO: unique constaint error handler
+		if IsSQLiteEniqueErr(err) {
+			log.Debug().Err(err).Msg("object already exists")
+			return 0, fmt.Errorf("%s: %w", op, ErrAlreadyExists)
+		}
 		log.Error().Err(err).Msg("failed to insert")
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
@@ -176,4 +180,10 @@ func (r Repository) Delete(ctx context.Context, entryNum int) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
+}
+
+func IsSQLiteEniqueErr(err error) bool {
+	var sqliteErr sqlite3.Error
+	return errors.As(err, &sqliteErr) &&
+		sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique
 }

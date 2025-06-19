@@ -14,14 +14,17 @@ const (
 )
 
 const (
-	masterKeyShorthand = "k"
-	masterKeyDefault   = ""
-	masterKeyUsage     = "key for encrypting, decrypting" +
-		" and accessing to stored data (required)"
+	masterKeyShorthand = command.MasterKeyShorthand
+	masterKeyDefault   = command.MasterKeyDefault
+	masterKeyUsage     = command.MasterKeyUsage
 
-	nameShorthand = "n"
-	nameDefault   = ""
+	nameShorthand = command.NameShorthand
+	nameDefault   = command.NameDefault
 	nameUsage     = "title for account (required)"
+
+	entryNumShorthand = command.EntryNumShorthand
+	entryNumDefault   = command.EntryNumDefault
+	entryNumUsage     = "entry number of stored account (required)"
 
 	passwordShorthand = "p"
 	passwordDefault   = ""
@@ -30,10 +33,6 @@ const (
 	loginShorthand = "l"
 	loginDefault   = ""
 	loginUsage     = "account login"
-
-	entryNumShorthand = "e"
-	entryNumDefault   = 0
-	entryNumUsage     = "stored account entry number"
 )
 
 func NewPwdCommand() *command.Command {

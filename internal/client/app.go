@@ -5,8 +5,10 @@ import (
 	"os"
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
+	"github.com/niksmo/gophkeeper/internal/client/command/bincommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
+	"github.com/niksmo/gophkeeper/internal/client/handler/binhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
@@ -63,6 +65,7 @@ func (a *App) Run(ctx context.Context) {
 func (a *App) registerCommands() {
 	a.cmd.AddCommand(
 		a.getPasswordCommand(),
+		a.getBinaryCommand(),
 	)
 }
 
@@ -71,26 +74,37 @@ func (a *App) getPasswordCommand() *command.Command {
 
 	addS := addservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
 	addH := pwdhandler.NewAddHandler(a.log, addS, os.Stdout)
+	addC := pwdcommand.NewPwdAddCommand(addH)
 
 	readS := readservice.New[dto.PWD](a.log, repo, a.decoder, a.decrypter)
 	readH := pwdhandler.NewReadHandler(a.log, readS, os.Stdout)
+	readC := pwdcommand.NewPwdReadCommand(readH)
 
 	listS := listservice.New(a.log, repo)
 	listH := pwdhandler.NewListHandler(a.log, listS, os.Stdout)
+	listC := pwdcommand.NewPwdListCommand(listH)
 
 	editS := editservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
 	editH := pwdhandler.NewEditHandler(a.log, editS, os.Stdout)
+	editC := pwdcommand.NewPwdEditCommand(editH)
 
 	removeS := removeservice.New(a.log, repo)
 	removeH := pwdhandler.NewRemoveHandler(a.log, removeS, os.Stdout)
-
-	addC := pwdcommand.NewPwdAddCommand(addH)
-	readC := pwdcommand.NewPwdReadCommand(readH)
-	listC := pwdcommand.NewPwdListCommand(listH)
-	editC := pwdcommand.NewPwdEditCommand(editH)
 	removeC := pwdcommand.NewPwdRemoveCommand(removeH)
 
 	passwordC := pwdcommand.NewPwdCommand()
 	passwordC.AddCommand(addC, readC, listC, editC, removeC)
 	return passwordC
+}
+
+func (a *App) getBinaryCommand() *command.Command {
+	repo := repository.NewBinRepository(a.log, a.storage)
+
+	addS := addservice.New[dto.BIN](a.log, repo, a.encoder, a.encrypter)
+	addH := binhandler.NewAddHandler(a.log, addS, os.Stdout)
+	addC := bincommand.NewBinAddCommand(addH)
+
+	binaryC := bincommand.NewBinCommand()
+	binaryC.AddCommand(addC)
+	return binaryC
 }

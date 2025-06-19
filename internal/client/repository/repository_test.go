@@ -20,7 +20,9 @@ type suite struct {
 	s   *storage.Storage
 }
 
-func newSuite(t *testing.T) *suite {
+type repoConstructor func(logger.Logger, repository.Storage) *repository.Repository
+
+func newSuite(t *testing.T, newRepoFn repoConstructor) *suite {
 	log := logger.NewPretty("debug")
 	dsn := filepath.Join(t.TempDir(), "test.db")
 	ctx := context.Background()
@@ -31,43 +33,58 @@ func newSuite(t *testing.T) *suite {
 
 	s := storage.New(log, dsn)
 	s.MustRun(ctx)
-	r := repository.NewPwdRepository(log, s)
+	r := newRepoFn(log, s)
 	return &suite{ctx, r, s}
 }
 
 func TestAdd(t *testing.T) {
-	st := newSuite(t)
-	expectedID := 1
-	expectedName := "testName"
-	expectedData := []byte("helloWorld")
-	id, err := st.r.Add(st.ctx, expectedName, expectedData)
-	require.NoError(t, err)
-	assert.Equal(t, expectedID, id)
-
-	stmt := `
-	SELECT name, data FROM passwords;
-	`
-	rows, err := st.s.QueryContext(st.ctx, stmt)
-	require.NoError(t, err)
-	defer rows.Close()
-	var nRows int
-	var name string
-	var data []byte
-	for rows.Next() {
-		nRows++
-		err := rows.Scan(&name, &data)
+	t.Run("Ordinary", func(t *testing.T) {
+		st := newSuite(t, repository.NewPwdRepository)
+		expectedID := 1
+		expectedName := "testName"
+		expectedData := []byte("helloWorld")
+		id, err := st.r.Add(st.ctx, expectedName, expectedData)
 		require.NoError(t, err)
-	}
-	err = rows.Err()
-	require.NoError(t, err)
-	require.Equal(t, 1, nRows)
-	assert.Equal(t, expectedName, name)
-	assert.Equal(t, expectedData, data)
+		assert.Equal(t, expectedID, id)
+
+		stmt := `
+		SELECT name, data FROM passwords;
+		`
+		rows, err := st.s.QueryContext(st.ctx, stmt)
+		require.NoError(t, err)
+		defer rows.Close()
+		var nRows int
+		var name string
+		var data []byte
+		for rows.Next() {
+			nRows++
+			err := rows.Scan(&name, &data)
+			require.NoError(t, err)
+		}
+		err = rows.Err()
+		require.NoError(t, err)
+		require.Equal(t, 1, nRows)
+		assert.Equal(t, expectedName, name)
+		assert.Equal(t, expectedData, data)
+	})
+
+	t.Run("UniqueNameConstraintErr", func(t *testing.T) {
+		st := newSuite(t, repository.NewBinRepository)
+		objectName := "testName"
+		objectData := []byte("testData")
+		expectedID := 1
+		actualID, err := st.r.Add(st.ctx, objectName, objectData)
+		require.NoError(t, err)
+		require.Equal(t, expectedID, actualID)
+
+		_, err = st.r.Add(st.ctx, objectName, objectData)
+		assert.Error(t, err)
+	})
 }
 
 func TestReadByID(t *testing.T) {
 	t.Run("ExistsID", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 		stmt := `
 		INSERT INTO
 		  passwords (name, data, created_at, updated_at)
@@ -89,7 +106,7 @@ func TestReadByID(t *testing.T) {
 	})
 
 	t.Run("NotExistsID", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 		stmt := `
 		INSERT INTO
 		  passwords (name, data, created_at, updated_at)
@@ -111,7 +128,7 @@ func TestReadByID(t *testing.T) {
 	})
 
 	t.Run("ExistsIDButDeleted", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 		stmt := `
 		INSERT INTO
 		  passwords (name, data, created_at, updated_at, deleted)
@@ -144,7 +161,7 @@ func TestListNames(t *testing.T) {
 	}
 
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 		stmt, err := st.s.PrepareContext(
 			st.ctx,
 			`INSERT INTO
@@ -191,7 +208,7 @@ func TestListNames(t *testing.T) {
 	})
 
 	t.Run("HaveDeleted", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 		stmt, err := st.s.PrepareContext(
 			st.ctx,
 			`INSERT INTO
@@ -238,7 +255,7 @@ func TestListNames(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 
 		insertName := "insertName"
 		insertData := []byte("insertData")
@@ -273,7 +290,7 @@ func TestUpdate(t *testing.T) {
 	})
 
 	t.Run("NotExistsEntry", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 		entryNum := 1
 		updateName := "updateName"
 		updateData := []byte("updateData")
@@ -284,7 +301,7 @@ func TestUpdate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 
 		insertName := "insertName"
 		insertData := []byte("insertData")
@@ -321,7 +338,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("NotExistsEntry", func(t *testing.T) {
-		st := newSuite(t)
+		st := newSuite(t, repository.NewPwdRepository)
 		entryNum := 1
 		err := st.r.Delete(st.ctx, entryNum)
 		assert.ErrorIs(t, err, repository.ErrNotExists)

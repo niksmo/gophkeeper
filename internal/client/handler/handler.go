@@ -63,6 +63,14 @@ func (h *AddHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 
 	entryNum, err := h.Service.Add(ctx, key, name, dto)
 	if err != nil {
+		if errors.Is(err, service.ErrAlreadyExists) {
+			log.Debug().Err(err).Msg("object already exists")
+			fmt.Fprintf(
+				h.Writer, "%s with name '%s' already exists\n",
+				h.Name, name,
+			)
+			return
+		}
 		log.Debug().Err(err).Msg(fmt.Sprintf("failed to add %s", h.Name))
 		InternalError(h.Writer, err)
 		os.Exit(1)
