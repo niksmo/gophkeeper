@@ -80,6 +80,7 @@ func NewPwdReadCommand(h command.Handler) *command.Command {
 
 	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
 	c.MarkFlagRequired(EntryNumFlag)
+
 	return &command.Command{Command: c}
 }
 

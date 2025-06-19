@@ -11,6 +11,8 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
+const handlerName = "password"
+
 type AddFlags struct {
 	Key string
 	dto.PWD
@@ -20,7 +22,7 @@ func NewAddHandler(
 	l logger.Logger, s handler.AddService[dto.PWD], w io.Writer,
 ) *handler.AddHandler[AddFlags, dto.PWD] {
 	h := &handler.AddHandler[AddFlags, dto.PWD]{
-		Log: l, Service: s, Writer: w, Name: "password",
+		Log: l, Service: s, Writer: w, Name: handlerName,
 	}
 
 	h.GetFlagsHook = func(v command.ValueGetter) (AddFlags, error) {
@@ -67,7 +69,7 @@ func NewReadHandler(
 		Log:     l,
 		Service: s,
 		Writer:  w,
-		Name:    "password",
+		Name:    handlerName,
 	}
 
 	h.GetFlagsHook = func(v command.ValueGetter) (ReadFlags, error) {
@@ -90,9 +92,9 @@ func NewReadHandler(
 		return f.Key, f.EntryNum
 	}
 
-	h.GetOutStr = func(entryNum int, dto dto.PWD) string {
+	h.GetOutputHook = func(_ ReadFlags, entryNum int, dto dto.PWD) string {
 		return fmt.Sprintf(
-			"the password with entry %d: name=%q, login=%q, password=%q",
+			"the password with entry %d: name=%q, login=%q, password=%q\n",
 			entryNum, dto.Name, dto.Login, dto.Password,
 		)
 	}
@@ -107,7 +109,7 @@ func NewListHandler(
 		Log:        l,
 		Service:    s,
 		Writer:     w,
-		Name:       "password",
+		Name:       handlerName,
 		NamePlural: "passwords",
 	}
 }
@@ -125,7 +127,7 @@ func NewEditHandler(
 		Log:     l,
 		Service: s,
 		Writer:  w,
-		Name:    "password",
+		Name:    handlerName,
 	}
 
 	h.GetFlagsHook = func(v command.ValueGetter) (EditFlags, error) {
@@ -182,7 +184,7 @@ func NewRemoveHandler(
 		Log:     l,
 		Service: s,
 		Writer:  w,
-		Name:    "password",
+		Name:    handlerName,
 	}
 	h.GetFlagsHook = func(v command.ValueGetter) (RemoveFlags, error) {
 		var errs []error

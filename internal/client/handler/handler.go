@@ -95,7 +95,7 @@ type ReadHandler[F any, O any] struct {
 	Name               string
 	GetFlagsHook       func(command.ValueGetter) (F, error)
 	GetServiceArgsHook func(F) (key string, entryNum int)
-	GetOutStr          func(entryNum int, dto O) string
+	GetOutputHook      func(flags F, entryNum int, dto O) string
 }
 
 func (h *ReadHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
@@ -133,11 +133,11 @@ func (h *ReadHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 		os.Exit(1)
 	}
 
-	h.printOut(entryNum, dto)
+	h.printOut(flags, entryNum, dto)
 }
 
-func (h *ReadHandler[F, O]) printOut(entryNum int, obj O) {
-	fmt.Fprintln(h.Writer, h.GetOutStr(entryNum, obj))
+func (h *ReadHandler[F, O]) printOut(flags F, entryNum int, obj O) {
+	fmt.Fprint(h.Writer, h.GetOutputHook(flags, entryNum, obj))
 }
 
 // ListHandler

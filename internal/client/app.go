@@ -33,25 +33,17 @@ type App struct {
 }
 
 func New(logLevel, dsn string) *App {
-	logger := logger.NewPretty(logLevel)
-	storage := storage.New(logger, dsn)
-	encoder := encode.NewEncoder()
-	decoder := encode.NewDecoder()
-	encrypter := cipher.NewEncrypter()
-	decrypter := cipher.NewDecrypter()
-
-	cmd := command.NewRootCommand()
-
+	log := logger.NewPretty(logLevel)
 	app := &App{
-		logger,
-		cmd,
-		storage,
-		encoder, decoder,
-		encrypter, decrypter,
+		log,
+		command.NewRootCommand(),
+		storage.New(log, dsn),
+		encode.NewEncoder(),
+		encode.NewDecoder(),
+		cipher.NewEncrypter(),
+		cipher.NewDecrypter(),
 	}
-
 	app.registerCommands()
-
 	return app
 }
 
@@ -104,7 +96,11 @@ func (a *App) getBinaryCommand() *command.Command {
 	addH := binhandler.NewAddHandler(a.log, addS, os.Stdout)
 	addC := bincommand.NewBinAddCommand(addH)
 
+	readS := readservice.New[dto.BIN](a.log, repo, a.decoder, a.decrypter)
+	readH := binhandler.NewReadHandler(a.log, readS, os.Stdout)
+	readC := bincommand.NewBinReadCommand(readH)
+
 	binaryC := bincommand.NewBinCommand()
-	binaryC.AddCommand(addC)
+	binaryC.AddCommand(addC, readC)
 	return binaryC
 }

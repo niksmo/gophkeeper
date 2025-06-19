@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/bincommand"
@@ -13,6 +14,8 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/handler"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
+
+const handlerName = "binary"
 
 type AddFlags struct {
 	Key string
@@ -23,7 +26,7 @@ func NewAddHandler(
 	l logger.Logger, s handler.AddService[dto.BIN], w io.Writer,
 ) *handler.AddHandler[AddFlags, dto.BIN] {
 	h := &handler.AddHandler[AddFlags, dto.BIN]{
-		Log: l, Service: s, Writer: w, Name: "binary",
+		Log: l, Service: s, Writer: w, Name: handlerName,
 	}
 
 	h.GetFlagsHook = func(v command.ValueGetter) (AddFlags, error) {
@@ -49,12 +52,11 @@ func NewAddHandler(
 			return AddFlags{}, err
 		}
 
-		data, ext, err := getFileData(filepath)
+		dto, err := getBinDto(name, filepath)
 		if err != nil {
-			return AddFlags{}, fmt.Errorf("file error: %w", err)
+			return AddFlags{}, err
 		}
 
-		dto := dto.BIN{Name: name, Data: data, Ext: ext}
 		return AddFlags{key, dto}, err
 	}
 
@@ -62,6 +64,64 @@ func NewAddHandler(
 		key string, name string, dto dto.BIN,
 	) {
 		return f.Key, f.Name, f.BIN
+	}
+
+	return h
+}
+
+type ReadFlags struct {
+	Key, Filepath string
+	EntryNum      int
+}
+
+func NewReadHandler(
+	l logger.Logger, s handler.ReadService[dto.BIN], w io.Writer,
+) *handler.ReadHandler[ReadFlags, dto.BIN] {
+	h := &handler.ReadHandler[ReadFlags, dto.BIN]{
+		Log:     l,
+		Service: s,
+		Writer:  w,
+		Name:    handlerName,
+	}
+
+	h.GetFlagsHook = func(v command.ValueGetter) (ReadFlags, error) {
+		var errs []error
+		key, err := handler.GetMasterKeyValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		entryNum, err := handler.GetEnryNumValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		filepath, _ := getFilePathValue(v)
+
+		err = handler.RequiredFlagsErr(errs)
+		return ReadFlags{key, filepath, entryNum}, err
+	}
+
+	h.GetServiceArgsHook = func(f ReadFlags) (key string, entryNum int) {
+		return f.Key, f.EntryNum
+	}
+
+	h.GetOutputHook = func(flags ReadFlags, entryNum int, dto dto.BIN) string {
+		var strBuilder strings.Builder
+		strBuilder.WriteString(
+			fmt.Sprintf(
+				"the binary data with entry %d: name=%q, ext=%q\n",
+				entryNum, dto.Name, dto.Ext,
+			))
+
+		err := writeData(flags.Filepath, dto.Data)
+		if err != nil {
+			strBuilder.WriteString(
+				fmt.Sprintf("write file error: %s\n", err.Error()),
+			)
+		}
+
+		return strBuilder.String()
 	}
 
 	return h
@@ -75,13 +135,21 @@ func getFilePathValue(v command.ValueGetter) (string, error) {
 	return filepath, nil
 }
 
+func getBinDto(name, path string) (dto.BIN, error) {
+	data, ext, err := getFileData(path)
+	if err != nil {
+		return dto.BIN{}, fmt.Errorf("file error: %w", err)
+	}
+	return dto.BIN{Name: name, Data: data, Ext: ext}, nil
+}
+
 func getFileData(path string) ([]byte, string, error) {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return nil, "", err
 	}
 
-	if err := verifyFile(path); err != nil {
+	if err := verifyReadingFile(path); err != nil {
 		return nil, "", err
 	}
 
@@ -93,7 +161,7 @@ func getFileData(path string) ([]byte, string, error) {
 	return data, ext, nil
 }
 
-func verifyFile(path string) error {
+func verifyReadingFile(path string) error {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -107,4 +175,24 @@ func verifyFile(path string) error {
 		return errors.New("the file size should be less or equal 100Mb")
 	}
 	return nil
+}
+
+func writeData(path string, data []byte) error {
+	if path == "" {
+		return nil
+	}
+
+	if fileExists(path) {
+		return fmt.Errorf("the file is exists")
+	}
+
+	return os.WriteFile(path, data, 0o644)
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
