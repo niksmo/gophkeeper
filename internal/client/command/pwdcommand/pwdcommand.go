@@ -110,10 +110,14 @@ func NewPwdEditCommand(h command.Handler) *command.Command {
 	c.Flags().StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
 	c.MarkFlagRequired(NameFlag)
 
-	c.Flags().StringP(PasswordFlag, passwordShorthand, passwordDefault, passwordUsage)
+	c.Flags().StringP(
+		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage,
+	)
 	c.MarkFlagRequired(PasswordFlag)
 
-	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	c.Flags().IntP(
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
+	)
 	c.MarkFlagRequired(EntryNumFlag)
 
 	c.Flags().StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)

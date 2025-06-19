@@ -68,7 +68,7 @@ func NewBinAddCommand(h command.Handler) *command.Command {
 func NewBinReadCommand(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "read",
-		Example: "'gophkeeper binary read -k key -e 7 -f /folder/to/file.ext'" +
+		Example: "gophkeeper binary read -k 'key' -e 7 -f '/folder/to/file.ext'" +
 			" - For write stored data to file.",
 		Run: func(cmd *cobra.Command, args []string) {
 			h.Handle(cmd.Context(), cmd.Flags())
@@ -86,5 +86,58 @@ func NewBinReadCommand(h command.Handler) *command.Command {
 		FilepathFlag, filepathShorthand, filepathDefault, writeFilepathUsage,
 	)
 
+	return &command.Command{Command: c}
+}
+
+func NewBinListCommand(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "list",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+	return &command.Command{Command: c}
+}
+
+func NewBinEditCommand(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "edit",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+
+	c.Flags().StringP(
+		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
+	)
+	c.MarkFlagRequired(MasterKeyFlag)
+
+	c.Flags().StringP(
+		NameFlag, nameShorthand, nameDefault, nameUsage,
+	)
+	c.MarkFlagRequired(NameFlag)
+
+	c.Flags().StringP(
+		FilepathFlag, filepathShorthand, filepathDefault, readFilepathUsage,
+	)
+	c.MarkFlagRequired(FilepathFlag)
+
+	c.Flags().IntP(
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
+	)
+	c.MarkFlagRequired(EntryNumFlag)
+
+	return &command.Command{Command: c}
+}
+
+func NewBinRemoveCommand(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "remove",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	c.MarkFlagRequired(EntryNumFlag)
 	return &command.Command{Command: c}
 }
