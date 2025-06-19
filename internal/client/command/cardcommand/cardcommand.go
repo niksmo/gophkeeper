@@ -1,4 +1,4 @@
-package bincommand
+package cardcommand
 
 import (
 	"github.com/niksmo/gophkeeper/internal/client/command"
@@ -9,7 +9,9 @@ const (
 	MasterKeyFlag = command.MasterKeyFlag
 	NameFlag      = command.NameFlag
 	EntryNumFlag  = command.EntryNumFlag
-	FilepathFlag  = "file"
+	CardNumFlag   = "card"
+	ExpDateFlag   = "exp"
+	CVVFlag       = "cvv"
 )
 
 const (
@@ -19,22 +21,29 @@ const (
 
 	nameShorthand = command.NameShorthand
 	nameDefault   = command.NameDefault
-	nameUsage     = "name for stored file data (required)"
+	nameUsage     = "title for bank card (required)"
 
 	entryNumShorthand = command.EntryNumShorthand
 	entryNumDefault   = command.EntryNumDefault
-	entryNumUsage     = "entry number of stored binary data (required)"
+	entryNumUsage     = "entry number of stored bank card (required)"
 
-	filepathShorthand  = "f"
-	filepathDefault    = ""
-	readFilepathUsage  = "path to file (required)"
-	writeFilepathUsage = "path to file for write data"
+	cardNumShorthand = "c"
+	cardNumDefault   = ""
+	cardNumUsage     = "bank card number (required)"
+
+	expDateShorthand = "x"
+	expDateDefault   = ""
+	expDateUsage     = "bank card validity period (required)"
+
+	cvcShorthand = "v"
+	cvcDefault   = ""
+	cvcUsage     = "bank card cvv/cvc"
 )
 
 func New() *command.Command {
 	c := &cobra.Command{
-		Use:   "binary",
-		Short: "Use the binary command to save your files data",
+		Use:   "card",
+		Short: "Use the card command to save your bank cards",
 	}
 	return &command.Command{Command: c}
 }
@@ -53,17 +62,24 @@ func NewAdd(h command.Handler) *command.Command {
 		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
 	)
 
+	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
+
 	flagSet.StringP(
-		NameFlag, nameShorthand, nameDefault, nameUsage,
+		CardNumFlag, cardNumShorthand, cardNumDefault, cardNumUsage,
 	)
 
 	flagSet.StringP(
-		FilepathFlag, filepathShorthand, filepathDefault, readFilepathUsage,
+		ExpDateFlag, expDateShorthand, expDateDefault, expDateUsage,
+	)
+
+	flagSet.StringP(
+		CVVFlag, cvcShorthand, cvcDefault, cvcUsage,
 	)
 
 	c.MarkFlagRequired(MasterKeyFlag)
 	c.MarkFlagRequired(NameFlag)
-	c.MarkFlagRequired(FilepathFlag)
+	c.MarkFlagRequired(CardNumFlag)
+	c.MarkFlagRequired(ExpDateFlag)
 
 	return &command.Command{Command: c}
 }
@@ -71,8 +87,6 @@ func NewAdd(h command.Handler) *command.Command {
 func NewRead(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "read",
-		Example: "gophkeeper binary read -k 'key' -e 7 -f '/folder/to/file.ext'" +
-			" - For write stored data to file.",
 		Run: func(cmd *cobra.Command, args []string) {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
@@ -83,14 +97,12 @@ func NewRead(h command.Handler) *command.Command {
 		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
 	)
 
-	flagSet.IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
-
-	flagSet.StringP(
-		FilepathFlag, filepathShorthand, filepathDefault, writeFilepathUsage,
+	flagSet.IntP(
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
 	)
 
-	c.MarkFlagRequired(EntryNumFlag)
 	c.MarkFlagRequired(MasterKeyFlag)
+	c.MarkFlagRequired(EntryNumFlag)
 
 	return &command.Command{Command: c}
 }
@@ -112,28 +124,36 @@ func NewEdit(h command.Handler) *command.Command {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
 	}
+
 	flagSet := c.Flags()
 
 	flagSet.StringP(
 		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
 	)
 
-	flagSet.StringP(
-		NameFlag, nameShorthand, nameDefault, nameUsage,
-	)
-
-	flagSet.StringP(
-		FilepathFlag, filepathShorthand, filepathDefault, readFilepathUsage,
-	)
-
 	flagSet.IntP(
 		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
 	)
 
+	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
+
+	flagSet.StringP(
+		CardNumFlag, cardNumShorthand, cardNumDefault, cardNumUsage,
+	)
+
+	flagSet.StringP(
+		ExpDateFlag, expDateShorthand, expDateDefault, expDateUsage,
+	)
+
+	flagSet.StringP(
+		CVVFlag, cvcShorthand, cvcDefault, cvcUsage,
+	)
+
 	c.MarkFlagRequired(MasterKeyFlag)
-	c.MarkFlagRequired(NameFlag)
 	c.MarkFlagRequired(EntryNumFlag)
-	c.MarkFlagRequired(FilepathFlag)
+	c.MarkFlagRequired(NameFlag)
+	c.MarkFlagRequired(CardNumFlag)
+	c.MarkFlagRequired(ExpDateFlag)
 
 	return &command.Command{Command: c}
 }

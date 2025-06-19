@@ -50,19 +50,23 @@ func NewAdd(h command.Handler) *command.Command {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
 	}
+	flagSet := c.Flags()
 
-	c.Flags().StringP(
+	flagSet.StringP(
 		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
 	)
+
+	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
+
+	flagSet.StringP(
+		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage,
+	)
+
+	flagSet.StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+
 	c.MarkFlagRequired(MasterKeyFlag)
-
-	c.Flags().StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
 	c.MarkFlagRequired(NameFlag)
-
-	c.Flags().StringP(PasswordFlag, passwordShorthand, passwordDefault, passwordUsage)
 	c.MarkFlagRequired(PasswordFlag)
-
-	c.Flags().StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
 	return &command.Command{Command: c}
 }
 
@@ -73,12 +77,17 @@ func NewRead(h command.Handler) *command.Command {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
 	}
-	c.Flags().StringP(
+	flagSet := c.Flags()
+
+	flagSet.StringP(
 		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
 	)
-	c.MarkFlagRequired(MasterKeyFlag)
 
-	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	flagSet.IntP(
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
+	)
+
+	c.MarkFlagRequired(MasterKeyFlag)
 	c.MarkFlagRequired(EntryNumFlag)
 
 	return &command.Command{Command: c}
@@ -101,26 +110,29 @@ func NewEdit(h command.Handler) *command.Command {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
 	}
+	flagSet := c.Flags()
 
-	c.Flags().StringP(
+	flagSet.StringP(
 		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
 	)
-	c.MarkFlagRequired(MasterKeyFlag)
 
-	c.Flags().StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
-	c.MarkFlagRequired(NameFlag)
+	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
 
-	c.Flags().StringP(
+	flagSet.StringP(
 		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage,
 	)
-	c.MarkFlagRequired(PasswordFlag)
 
-	c.Flags().IntP(
+	flagSet.IntP(
 		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
 	)
-	c.MarkFlagRequired(EntryNumFlag)
 
-	c.Flags().StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+	flagSet.StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+
+	c.MarkFlagRequired(MasterKeyFlag)
+	c.MarkFlagRequired(NameFlag)
+	c.MarkFlagRequired(EntryNumFlag)
+	c.MarkFlagRequired(PasswordFlag)
+
 	return &command.Command{Command: c}
 }
 
@@ -131,7 +143,9 @@ func NewRemove(h command.Handler) *command.Command {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
 	}
-	c.Flags().IntP(EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+	c.Flags().IntP(
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
+	)
 	c.MarkFlagRequired(EntryNumFlag)
 	return &command.Command{Command: c}
 }

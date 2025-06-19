@@ -1,27 +1,27 @@
-package pwdhandler
+package cardhandler
 
 import (
 	"fmt"
 	"io"
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
-	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
+	"github.com/niksmo/gophkeeper/internal/client/command/cardcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
-const handlerName = "password"
+const handlerName = "bank card"
 
 type AddFlags struct {
 	Key string
-	dto.PWD
+	dto.BankCard
 }
 
 func NewAdd(
-	l logger.Logger, s handler.AddService[dto.PWD], w io.Writer,
-) *handler.AddHandler[AddFlags, dto.PWD] {
-	h := &handler.AddHandler[AddFlags, dto.PWD]{
+	l logger.Logger, s handler.AddService[dto.BankCard], w io.Writer,
+) *handler.AddHandler[AddFlags, dto.BankCard] {
+	h := &handler.AddHandler[AddFlags, dto.BankCard]{
 		Log:     l,
 		Service: s,
 		Writer:  w,
@@ -38,25 +38,36 @@ func NewAdd(
 		name, err := handler.GetNameValue(v)
 		if err != nil {
 			errs = append(errs, err)
-
 		}
 
-		password, err := getPasswordValue(v)
+		cardNum, err := getCardNumberValue(v)
 		if err != nil {
 			errs = append(errs, err)
 		}
 
-		login := getLoginValue(v)
+		expDate, err := getExpDateValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		cvc := getCVCValue(v)
 
 		err = handler.RequiredFlagsErr(errs)
-		dto := dto.PWD{Name: name, Login: login, Password: password}
+
+		dto := dto.BankCard{
+			Name:    name,
+			Number:  cardNum,
+			ExpDate: expDate,
+			CVC:     cvc,
+		}
+
 		return AddFlags{key, dto}, err
 	}
 
 	h.GetServiceArgsHook = func(
 		f AddFlags,
-	) (key string, name string, dto dto.PWD) {
-		return f.Key, f.Name, f.PWD
+	) (key string, name string, dto dto.BankCard) {
+		return f.Key, f.Name, f.BankCard
 	}
 
 	return h
@@ -68,9 +79,9 @@ type ReadFlags struct {
 }
 
 func NewRead(
-	l logger.Logger, s handler.ReadService[dto.PWD], w io.Writer,
-) *handler.ReadHandler[ReadFlags, dto.PWD] {
-	h := &handler.ReadHandler[ReadFlags, dto.PWD]{
+	l logger.Logger, s handler.ReadService[dto.BankCard], w io.Writer,
+) *handler.ReadHandler[ReadFlags, dto.BankCard] {
+	h := &handler.ReadHandler[ReadFlags, dto.BankCard]{
 		Log:     l,
 		Service: s,
 		Writer:  w,
@@ -97,10 +108,10 @@ func NewRead(
 		return f.Key, f.EntryNum
 	}
 
-	h.GetOutputHook = func(_ ReadFlags, entryNum int, dto dto.PWD) string {
+	h.GetOutputHook = func(_ ReadFlags, entryNum int, dto dto.BankCard) string {
 		return fmt.Sprintf(
-			"the password with entry %d: name=%q login=%q password=%q\n",
-			entryNum, dto.Name, dto.Login, dto.Password,
+			"the bank card with entry %d: name=%q number=%q exp=%q cvc=%q\n",
+			entryNum, dto.Name, dto.Number, dto.ExpDate, dto.CVC,
 		)
 	}
 
@@ -115,20 +126,20 @@ func NewList(
 		Service:    s,
 		Writer:     w,
 		Name:       handlerName,
-		NamePlural: "passwords",
+		NamePlural: "bank cards",
 	}
 }
 
 type EditFlags struct {
 	Key      string
 	EntryNum int
-	dto.PWD
+	dto.BankCard
 }
 
 func NewEdit(
-	l logger.Logger, s handler.EditService[dto.PWD], w io.Writer,
-) *handler.EditHandler[EditFlags, dto.PWD] {
-	h := &handler.EditHandler[EditFlags, dto.PWD]{
+	l logger.Logger, s handler.EditService[dto.BankCard], w io.Writer,
+) *handler.EditHandler[EditFlags, dto.BankCard] {
+	h := &handler.EditHandler[EditFlags, dto.BankCard]{
 		Log:     l,
 		Service: s,
 		Writer:  w,
@@ -142,37 +153,44 @@ func NewEdit(
 			errs = append(errs, err)
 		}
 
-		name, err := handler.GetNameValue(v)
-		if err != nil {
-			errs = append(errs, err)
-
-		}
-
 		entryNum, err := handler.GetEnryNumValue(v)
 		if err != nil {
 			errs = append(errs, err)
 		}
 
-		password, err := getPasswordValue(v)
+		name, err := handler.GetNameValue(v)
 		if err != nil {
 			errs = append(errs, err)
 		}
 
-		login := getLoginValue(v)
+		cardNum, err := getCardNumberValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		expDate, err := getExpDateValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		cvc := getCVCValue(v)
 
 		err = handler.RequiredFlagsErr(errs)
-		dto := dto.PWD{
-			Name:     name,
-			Login:    login,
-			Password: password,
+
+		dto := dto.BankCard{
+			Name:    name,
+			Number:  cardNum,
+			ExpDate: expDate,
+			CVC:     cvc,
 		}
+
 		return EditFlags{key, entryNum, dto}, err
 	}
 
 	h.GetServiceArgsHook = func(
 		f EditFlags,
-	) (key string, entryNum int, name string, dto dto.PWD) {
-		return f.Key, f.EntryNum, f.Name, f.PWD
+	) (key string, entryNum int, name string, dto dto.BankCard) {
+		return f.Key, f.EntryNum, f.Name, f.BankCard
 	}
 
 	return h
@@ -209,15 +227,23 @@ func NewRemove(
 	return h
 }
 
-func getPasswordValue(v command.ValueGetter) (string, error) {
-	p, err := v.GetString(pwdcommand.PasswordFlag)
-	if err != nil || handler.IsZeroStr(p) {
-		return "", fmt.Errorf("--%s", pwdcommand.PasswordFlag)
+func getCardNumberValue(v command.ValueGetter) (string, error) {
+	cardNum, err := v.GetString(cardcommand.CardNumFlag)
+	if err != nil || handler.IsZeroStr(cardNum) {
+		return "", fmt.Errorf("--%s", cardcommand.CardNumFlag)
 	}
-	return p, nil
+	return cardNum, nil
 }
 
-func getLoginValue(v command.ValueGetter) string {
-	l, _ := v.GetString(pwdcommand.LoginFlag)
-	return l
+func getExpDateValue(v command.ValueGetter) (string, error) {
+	expDate, err := v.GetString(cardcommand.ExpDateFlag)
+	if err != nil || handler.IsZeroStr(expDate) {
+		return "", fmt.Errorf("--%s", cardcommand.ExpDateFlag)
+	}
+	return expDate, nil
+}
+
+func getCVCValue(v command.ValueGetter) string {
+	cvc, _ := v.GetString(cardcommand.CVVFlag)
+	return cvc
 }

@@ -6,9 +6,11 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/bincommand"
+	"github.com/niksmo/gophkeeper/internal/client/command/cardcommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler/binhandler"
+	"github.com/niksmo/gophkeeper/internal/client/handler/cardhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
@@ -58,6 +60,7 @@ func (a *App) registerCommands() {
 	a.cmd.AddCommand(
 		a.getPasswordCommand(),
 		a.getBinaryCommand(),
+		a.getCardCommand(),
 	)
 }
 
@@ -115,4 +118,32 @@ func (a *App) getBinaryCommand() *command.Command {
 	binaryC := bincommand.New()
 	binaryC.AddCommand(addC, readC, listC, editC, removeC)
 	return binaryC
+}
+
+func (a *App) getCardCommand() *command.Command {
+	repo := repository.NewCard(a.log, a.storage)
+
+	addS := addservice.New[dto.BankCard](a.log, repo, a.encoder, a.encrypter)
+	addH := cardhandler.NewAdd(a.log, addS, os.Stdout)
+	addC := cardcommand.NewAdd(addH)
+
+	readS := readservice.New[dto.BankCard](a.log, repo, a.decoder, a.decrypter)
+	readH := cardhandler.NewRead(a.log, readS, os.Stdout)
+	readC := cardcommand.NewRead(readH)
+
+	listS := listservice.New(a.log, repo)
+	listH := cardhandler.NewList(a.log, listS, os.Stdout)
+	listC := cardcommand.NewList(listH)
+
+	editS := editservice.New[dto.BankCard](a.log, repo, a.encoder, a.encrypter)
+	editH := cardhandler.NewEdit(a.log, editS, os.Stdout)
+	editC := cardcommand.NewEdit(editH)
+
+	removeS := removeservice.New(a.log, repo)
+	removeH := cardhandler.NewRemove(a.log, removeS, os.Stdout)
+	removeC := cardcommand.NewRemove(removeH)
+
+	cardC := cardcommand.New()
+	cardC.AddCommand(addC, readC, listC, editC, removeC)
+	return cardC
 }

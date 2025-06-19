@@ -11,3 +11,10 @@ type BIN struct {
 	Ext  string
 	Data []byte
 }
+
+type BankCard struct {
+	Name    string
+	Number  string
+	ExpDate string
+	CVC     string
+}
