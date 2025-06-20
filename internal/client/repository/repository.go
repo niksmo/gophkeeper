@@ -100,7 +100,10 @@ func (r *Repository) ListNames(ctx context.Context) ([][2]string, error) {
 	log := r.l.With().Str("op", op).Logger()
 
 	stmt := fmt.Sprintf(
-		`SELECT id, name FROM %s WHERE deleted=FALSE ORDER BY name ASC;`,
+		`
+		SELECT id, name FROM %s WHERE deleted=FALSE
+		ORDER BY name ASC, crated_at ASC;
+		`,
 		r.table,
 	)
 

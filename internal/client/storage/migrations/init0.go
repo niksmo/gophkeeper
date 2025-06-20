@@ -11,7 +11,7 @@ func init0(ctx context.Context, s Storage) error {
 	CREATE TABLE IF NOT EXISTS migrations (
 	id INTEGER PRIMARY KEY,
 	name TEXT,
-	created_at TIMESTAMP NOT NULL 
+	created_at TIMESTAMP NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS passwords (
@@ -20,7 +20,8 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE
+	deleted BOOLEAN DEFAULT FALSE,
+	sync_id INTEGER UNIQUE
 	);
 
 	CREATE TABLE IF NOT EXISTS cards (
@@ -29,7 +30,8 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE
+	deleted BOOLEAN DEFAULT FALSE,
+	sync_id INTEGER UNIQUE
 	);
 
 	CREATE TABLE IF NOT EXISTS texts (
@@ -38,7 +40,8 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE
+	deleted BOOLEAN DEFAULT FALSE,
+	sync_id INTEGER UNIQUE
 	);
 	
 	CREATE TABLE IF NOT EXISTS binaries (
@@ -47,7 +50,8 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE
+	deleted BOOLEAN DEFAULT FALSE,
+	sync_id INTEGER UNIQUE
 	);
 
 	INSERT INTO migrations (name, created_at) VALUES (?, ?);
