@@ -21,7 +21,7 @@ type (
 	}
 
 	addRepo interface {
-		Add(ctx context.Context, name string, data []byte) (int, error)
+		Create(ctx context.Context, name string, data []byte) (int, error)
 	}
 )
 
@@ -61,7 +61,7 @@ func (s *AddService[T]) Add(
 	s.encrypter.SetKey(key)
 	data := s.encrypter.Encrypt(b)
 
-	entryNum, err := s.r.Add(ctx, name, data)
+	entryNum, err := s.r.Create(ctx, name, data)
 	if err != nil {
 		if errors.Is(err, repository.ErrAlreadyExists) {
 			log.Debug().Str("name", name).Msg("object already exists")

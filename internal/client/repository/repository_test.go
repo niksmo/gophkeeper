@@ -44,7 +44,7 @@ func TestAdd(t *testing.T) {
 		expectedID := 1
 		expectedName := "testName"
 		expectedData := []byte("helloWorld")
-		id, err := st.r.Add(st.ctx, expectedName, expectedData)
+		id, err := st.r.Create(st.ctx, expectedName, expectedData)
 		require.NoError(t, err)
 		assert.Equal(t, expectedID, id)
 
@@ -74,11 +74,11 @@ func TestAdd(t *testing.T) {
 		objectName := "testName"
 		objectData := []byte("testData")
 		expectedID := 1
-		actualID, err := st.r.Add(st.ctx, objectName, objectData)
+		actualID, err := st.r.Create(st.ctx, objectName, objectData)
 		require.NoError(t, err)
 		require.Equal(t, expectedID, actualID)
 
-		_, err = st.r.Add(st.ctx, objectName, objectData)
+		_, err = st.r.Create(st.ctx, objectName, objectData)
 		assert.Error(t, err)
 	})
 }

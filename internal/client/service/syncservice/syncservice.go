@@ -2,6 +2,7 @@ package syncservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,15 +12,26 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/synccommand"
+	"github.com/niksmo/gophkeeper/internal/client/dto"
+	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
-type SignupService struct {
-	logger logger.Logger
+var ErrPIDConflict = errors.New("PID conflict")
+
+type SyncRepo interface {
+	Create(ctx context.Context, pid int, start time.Time) error
+	ReadLast(context.Context) (dto.SyncDTO, error)
+	Update(context.Context, dto.SyncDTO) error
 }
 
-func NewSignup(logger logger.Logger) *SignupService {
-	return &SignupService{logger}
+type SignupService struct {
+	logger logger.Logger
+	repo   SyncRepo
+}
+
+func NewSignup(logger logger.Logger, repo SyncRepo) *SignupService {
+	return &SignupService{logger, repo}
 }
 
 func (s *SignupService) Signup(
@@ -31,11 +43,13 @@ func (s *SignupService) Signup(
 	// token, err := server.RegisterNewUser(login, password)
 	// if err != nil {
 	// log err
+	// handle invalid arg err (empty login or password)
+	// handle already exists err
 	// return human readable error
 	// }
 
 	token := "myToken12345"
-	pid, err := startSyncSubproc(token)
+	pid, err := startSyncSubproc(ctx, token, s.repo)
 	if err != nil {
 		log.Debug().Err(err).Send()
 		return fmt.Errorf("%s: %w", op, err)
@@ -47,15 +61,35 @@ func (s *SignupService) Signup(
 
 type SigninService struct {
 	logger logger.Logger
+	repo   SyncRepo
 }
 
-func NewSignin(logger logger.Logger) *SigninService {
-	return &SigninService{logger}
+func NewSignin(logger logger.Logger, repo SyncRepo) *SigninService {
+	return &SigninService{logger, repo}
 }
 
 func (s *SigninService) Signin(
 	ctx context.Context, login, password string,
 ) error {
+	const op = "SigninService.Signup"
+	log := s.logger.With().Str("op", op).Logger()
+
+	// token, err := server.RegisterNewUser(login, password)
+	// if err != nil {
+	// log err
+	// handle invalid arg err (empty login or password)
+	// handle invalid login or password
+	// return human readable error
+	// }
+
+	token := "myToken12345"
+	pid, err := startSyncSubproc(ctx, token, s.repo)
+	if err != nil {
+		log.Debug().Err(err).Send()
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	log.Debug().Int("syncPID", pid).Send()
+
 	return nil
 }
 
@@ -95,7 +129,6 @@ func (s *SyncService) Start(ctx context.Context, token string) {
 		ctx, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT,
 	)
 	defer stop()
-	// save PID to database
 	ticker := time.NewTicker(s.tick)
 	defer ticker.Stop()
 
@@ -110,10 +143,46 @@ func (s *SyncService) Start(ctx context.Context, token string) {
 	}
 }
 
-func startSyncSubproc(token string) (pid int, err error) {
+func startSyncSubproc(
+	ctx context.Context, token string, syncRepo SyncRepo,
+) (pid int, err error) {
+	lastSync, err := syncRepo.ReadLast(ctx)
+	if errors.Is(err, repository.ErrNotExists) || lastSync.StoppedAt != nil {
+		return execSync(ctx, token, syncRepo)
+	}
+
+	if err != nil || repairLastSyncEntry(ctx, syncRepo, lastSync) != nil {
+		return 0, err
+	}
+
+	return execSync(ctx, token, syncRepo)
+}
+
+func execSync(
+	ctx context.Context, token string, syncRepo SyncRepo,
+) (int, error) {
 	cmd := exec.Command(os.Args[0], "sync", "start", "-t", token)
 	if err := cmd.Start(); err != nil {
 		return 0, err
 	}
-	return cmd.Process.Pid, nil
+
+	pid := cmd.Process.Pid
+	if err := syncRepo.Create(ctx, pid, time.Now()); err != nil {
+		return 0, err
+	}
+	return pid, nil
+}
+
+func repairLastSyncEntry(
+	ctx context.Context, syncRepo SyncRepo, lastSync dto.SyncDTO,
+) error {
+	p, err := os.FindProcess(lastSync.PID)
+	if err != nil || p.Signal(syscall.Signal(0)) != nil {
+		stoppedAt := time.Now()
+		lastSync.StoppedAt = &stoppedAt
+		if err := syncRepo.Update(ctx, lastSync); err != nil {
+			return err
+		}
+	}
+	return ErrPIDConflict
 }

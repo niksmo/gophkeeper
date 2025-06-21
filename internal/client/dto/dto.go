@@ -42,3 +42,10 @@ type ClientDTO struct {
 	Deleted   bool
 	SyncID    int
 }
+
+type SyncDTO struct {
+	ID        int
+	PID       int
+	StartedAt time.Time
+	StoppedAt *time.Time
+}

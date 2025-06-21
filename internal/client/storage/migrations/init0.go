@@ -14,6 +14,13 @@ func init0(ctx context.Context, s Storage) error {
 	created_at TIMESTAMP NOT NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS synchronizations (
+	id INTEGER PRIMARY KEY,
+	pid INTEGER NOT NULL,
+	started_at TIMESTAMP NOT NULL,
+	stopped_at TIMESTAMP
+	);
+
 	CREATE TABLE IF NOT EXISTS passwords (
 	id INTEGER PRIMARY KEY,
 	name TEXT,

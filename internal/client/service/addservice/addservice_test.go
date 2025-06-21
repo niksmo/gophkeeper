@@ -38,7 +38,7 @@ type repo struct {
 	mock.Mock
 }
 
-func (r *repo) Add(
+func (r *repo) Create(
 	ctx context.Context, name string, data []byte,
 ) (int, error) {
 	args := r.Called(ctx, name, data)

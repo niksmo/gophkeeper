@@ -17,18 +17,17 @@ var (
 	ErrNotExists     = errors.New("not exists")
 )
 
-type (
-	Storage interface {
-		QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
-		QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-	}
+type Storage interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
 
-	Repository struct {
-		l     logger.Logger
-		db    Storage
-		table string
-	}
-)
+type Repository struct {
+	log   logger.Logger
+	db    Storage
+	table string
+}
 
 func NewPwd(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "passwords"}
@@ -46,11 +45,11 @@ func NewBin(l logger.Logger, db Storage) *Repository {
 	return &Repository{l, db, "binaries"}
 }
 
-func (r *Repository) Add(
+func (r *Repository) Create(
 	ctx context.Context, name string, data []byte,
 ) (int, error) {
-	const op = "Repository.Add"
-	log := r.l.With().Str("op", op).Logger()
+	const op = "Repository.Create"
+	log := r.log.With().Str("op", op).Logger()
 
 	stmt := fmt.Sprintf(`
 	INSERT INTO %s (name, data, created_at, updated_at)
@@ -74,7 +73,7 @@ func (r *Repository) Add(
 
 func (r *Repository) ReadByID(ctx context.Context, id int) ([]byte, error) {
 	const op = "Repository.ReadByID"
-	log := r.l.With().Str("op", op).Logger()
+	log := r.log.With().Str("op", op).Logger()
 
 	stmt := fmt.Sprintf(
 		`SELECT data FROM %s WHERE id=? AND deleted=FALSE;`, r.table,
@@ -97,12 +96,12 @@ func (r *Repository) ReadByID(ctx context.Context, id int) ([]byte, error) {
 
 func (r *Repository) ListNames(ctx context.Context) ([][2]string, error) {
 	const op = "Repository.ListNames"
-	log := r.l.With().Str("op", op).Logger()
+	log := r.log.With().Str("op", op).Logger()
 
 	stmt := fmt.Sprintf(
 		`
 		SELECT id, name FROM %s WHERE deleted=FALSE
-		ORDER BY name ASC, crated_at ASC;
+		ORDER BY name ASC, created_at ASC;
 		`,
 		r.table,
 	)
@@ -137,7 +136,7 @@ func (r *Repository) Update(
 	ctx context.Context, entryNum int, name string, data []byte,
 ) error {
 	const op = "Repository.Update"
-	log := r.l.With().Str("op", op).Logger()
+	log := r.log.With().Str("op", op).Logger()
 
 	stmt := fmt.Sprintf(`
 	UPDATE %s SET
@@ -167,7 +166,7 @@ func (r *Repository) Update(
 
 func (r Repository) Delete(ctx context.Context, entryNum int) error {
 	const op = "Repository.Delete"
-	log := r.l.With().Str("op", op).Logger()
+	log := r.log.With().Str("op", op).Logger()
 
 	stmt := fmt.Sprintf(`
 	UPDATE %s SET

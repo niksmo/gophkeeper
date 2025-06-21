@@ -185,11 +185,12 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
-	signupS := syncservice.NewSignup(a.log)
+	syncRepo := repository.NewSync(a.log, a.storage)
+	signupS := syncservice.NewSignup(a.log, syncRepo)
 	signupH := synchandler.NewSignup(a.log, signupS, os.Stdout)
 	signupC := synccommand.NewSignup(signupH)
 
-	signinS := syncservice.NewSignin(a.log)
+	signinS := syncservice.NewSignin(a.log, syncRepo)
 	signinH := synchandler.NewSignin(a.log, signinS, os.Stdout)
 	signinC := synccommand.NewSignin(signinH)
 
