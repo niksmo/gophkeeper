@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type PWD struct {
 	Name     string
 	Login    string
@@ -22,4 +24,21 @@ type BankCard struct {
 type Text struct {
 	Name string
 	Data string
+}
+
+type LtClientEntry struct {
+	ID        int
+	Name      string
+	UpdatedAt time.Time
+	SyncID    int
+}
+
+type ClientDTO struct {
+	ID        int
+	Name      string
+	Data      []byte
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Deleted   bool
+	SyncID    int
 }

@@ -8,6 +8,7 @@ import (
 const (
 	PasswordFlag = "password"
 	LoginFlag    = "login"
+	TokenFlag    = "token"
 )
 
 const (
@@ -18,6 +19,10 @@ const (
 	passwordShorthand = "p"
 	passwordDefault   = ""
 	passwordUsage     = "sync account password (required)"
+
+	tokenShorthand = "t"
+	tokenDefault   = ""
+	tokenUsage     = ""
 )
 
 func New() *command.Command {
@@ -78,5 +83,18 @@ func NewLogout(h command.Handler) *command.Command {
 			h.Handle(cmd.Context(), cmd.Flags())
 		},
 	}
+	return &command.Command{Command: c}
+}
+
+func NewStart(h command.Handler) *command.Command {
+	c := &cobra.Command{
+		Use: "start",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), cmd.Flags())
+		},
+	}
+	c.Hidden = true
+	c.Flags().StringP(TokenFlag, tokenShorthand, tokenDefault, tokenUsage)
+	c.MarkFlagRequired(TokenFlag)
 	return &command.Command{Command: c}
 }

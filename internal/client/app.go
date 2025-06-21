@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/bincommand"
@@ -196,7 +197,10 @@ func (a *App) getSyncCommand() *command.Command {
 	logoutH := synchandler.NewLogout(a.log, logoutS, os.Stdout)
 	logoutC := synccommand.NewLogout(logoutH)
 
+	syncS := syncservice.New(a.log, time.Second*5)
+	startC := synccommand.NewStart(syncS)
+
 	syncC := synccommand.New()
-	syncC.AddCommand(signupC, signinC, logoutC)
+	syncC.AddCommand(signupC, signinC, logoutC, startC)
 	return syncC
 }
