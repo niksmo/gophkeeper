@@ -8,11 +8,13 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/command/bincommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/cardcommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/pwdcommand"
+	"github.com/niksmo/gophkeeper/internal/client/command/synccommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/textcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler/binhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/cardhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
+	"github.com/niksmo/gophkeeper/internal/client/handler/synchandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/texthandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
@@ -20,6 +22,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/readservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/removeservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/syncservice"
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
@@ -64,6 +67,7 @@ func (a *App) registerCommands() {
 		a.getBinaryCommand(),
 		a.getCardCommand(),
 		a.getTextCommand(),
+		a.getSyncCommand(),
 	)
 }
 
@@ -177,4 +181,22 @@ func (a *App) getTextCommand() *command.Command {
 	textC := textcommand.New()
 	textC.AddCommand(addC, readC, listC, editC, removeC)
 	return textC
+}
+
+func (a *App) getSyncCommand() *command.Command {
+	signupS := syncservice.NewSignup(a.log)
+	signupH := synchandler.NewSignup(a.log, signupS, os.Stdout)
+	signupC := synccommand.NewSignup(signupH)
+
+	signinS := syncservice.NewSignin(a.log)
+	signinH := synchandler.NewSignin(a.log, signinS, os.Stdout)
+	signinC := synccommand.NewSignin(signinH)
+
+	logoutS := syncservice.NewLogout(a.log)
+	logoutH := synchandler.NewLogout(a.log, logoutS, os.Stdout)
+	logoutC := synccommand.NewLogout(logoutH)
+
+	syncC := synccommand.New()
+	syncC.AddCommand(signupC, signinC, logoutC)
+	return syncC
 }
