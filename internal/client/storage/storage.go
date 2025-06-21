@@ -11,21 +11,21 @@ import (
 
 type Storage struct {
 	*sql.DB
-	l logger.Logger
+	log logger.Logger
 }
 
-func New(l logger.Logger, dsn string) *Storage {
+func New(logger logger.Logger, dsn string) *Storage {
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
-		l.Fatal().Err(err).Msg("failed to open sql db")
+		logger.Fatal().Err(err).Msg("failed to open sql db")
 	}
 
 	if err := db.Ping(); err != nil {
-		l.Fatal().Err(err).Str("dsn", dsn).Msg("failed to ping sql db")
+		logger.Fatal().Err(err).Str("dsn", dsn).Msg("failed to ping sql db")
 	}
-	l.Debug().Msg("database opens successfully")
+	logger.Debug().Msg("database opens successfully")
 
-	return &Storage{db, l}
+	return &Storage{db, logger}
 }
 
 func (s *Storage) MustRun(ctx context.Context) {
@@ -39,7 +39,7 @@ func (s *Storage) migrate(ctx context.Context) {
 
 func (s *Storage) lastMigrationID(ctx context.Context) int {
 	const op = "storage.lastMigrationID"
-	log := s.l.With().Str("op", op).Logger()
+	log := s.log.With().Str("op", op).Logger()
 	id, err := migrations.GetLastID(ctx, s)
 	if err != nil {
 		log.Debug().Err(err).Send()
@@ -52,7 +52,7 @@ func (s *Storage) lastMigrationID(ctx context.Context) int {
 func (s *Storage) makeMigrations(ctx context.Context, lastID int) {
 	const op = "storage.makeMigrations"
 	for i, m := range migrations.Seq[lastID:] {
-		log := s.l.With().Str("op", op).Int("migrationID", i).Logger()
+		log := s.log.With().Str("op", op).Int("migrationID", i).Logger()
 
 		log.Debug().Msg("start migration")
 		if err := m(ctx, s); err != nil {
