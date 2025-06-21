@@ -11,6 +11,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/command/synccommand"
 	"github.com/niksmo/gophkeeper/internal/client/handler"
 	"github.com/niksmo/gophkeeper/internal/client/service"
+	"github.com/niksmo/gophkeeper/internal/client/service/syncservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
@@ -54,6 +55,12 @@ func (h *SignupHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		switch {
 		case errors.Is(err, service.ErrAlreadyExists):
 			fmt.Fprintf(h.Writer, "the login '%s' already exists\n", l)
+			os.Exit(1)
+		case errors.Is(err, syncservice.ErrPIDConflict):
+			fmt.Fprintln(
+				h.Writer,
+				"synchronization start error, please logout and then login",
+			)
 			os.Exit(1)
 		default:
 			log.Debug().Err(err).Msg("failed to register new user account")
@@ -118,13 +125,16 @@ func (h *LogoutHandler) Handle(ctx context.Context, v command.ValueGetter) {
 
 	err := h.Service.Logout(ctx)
 	if err != nil {
+		if errors.Is(err, syncservice.ErrNoSync) {
+			fmt.Fprintln(h.Writer, "synchronization is not running")
+			return
+		}
 		log.Debug().Err(err).Msg("failed to logout")
 		handler.InternalError(h.Writer, err)
 		os.Exit(1)
-
 	}
 
-	fmt.Fprintf(h.Writer, "synchronization stopped")
+	fmt.Fprintln(h.Writer, "synchronization stopped")
 
 }
 

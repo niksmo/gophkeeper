@@ -20,22 +20,32 @@ func NewSync(l logger.Logger, db Storage) *SyncRepository {
 	return &SyncRepository{l, db}
 }
 
-func (r *SyncRepository) Create(ctx context.Context, pid int, startedAt time.Time) error {
+func (r *SyncRepository) Create(
+	ctx context.Context, pid int, startedAt time.Time,
+) (dto.SyncDTO, error) {
 	const op = "SyncRepository.Create"
 
 	stmt := `
 	INSERT INTO synchronizations (pid, started_at)
-	VALUES (?, ?);
+	VALUES (?, ?)
+	RETURNING id, pid, started_at;
 	`
-	if _, err := r.db.ExecContext(ctx, stmt, pid, startedAt); err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	var obj dto.SyncDTO
+	err := r.db.QueryRowContext(ctx, stmt, pid, startedAt).Scan(
+		&obj.ID, &obj.PID, &obj.StartedAt,
+	)
+	if err != nil {
+		r.log.Debug().Str("op", op).Err(err).Msg("failed to create sync entry")
+		return obj, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return nil
+	return obj, nil
 }
 
 func (r *SyncRepository) ReadLast(ctx context.Context) (dto.SyncDTO, error) {
 	const op = "SyncRepository.ReadLast"
+
+	log := r.log.With().Str("op", op).Logger()
 
 	stmt := `
 	SELECT id, pid, started_at, stopped_at
@@ -49,11 +59,12 @@ func (r *SyncRepository) ReadLast(ctx context.Context) (dto.SyncDTO, error) {
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		r.log.Debug().Err(err).Msg("object is not exists")
+		log.Debug().Err(err).Msg("object is not exists")
 		return obj, fmt.Errorf("%s: %w", op, ErrNotExists)
 	}
 
 	if err != nil {
+		log.Debug().Err(err).Msg("failed to read sync entry")
 		return obj, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -62,6 +73,8 @@ func (r *SyncRepository) ReadLast(ctx context.Context) (dto.SyncDTO, error) {
 
 func (r *SyncRepository) Update(ctx context.Context, dto dto.SyncDTO) error {
 	const op = "SyncRepository.Update"
+
+	log := r.log.With().Str("op", op).Logger()
 
 	stmt := `
 	UPDATE synchronizations
@@ -75,11 +88,12 @@ func (r *SyncRepository) Update(ctx context.Context, dto dto.SyncDTO) error {
 		ctx, stmt, dto.PID, dto.StartedAt, *dto.StoppedAt, dto.ID,
 	).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		r.log.Debug().Err(err).Msg("object is not exists")
+		log.Debug().Err(err).Msg("object is not exists")
 		return fmt.Errorf("%s: %w", op, ErrNotExists)
 	}
 
 	if err != nil {
+		log.Debug().Err(err).Msg("failed to update")
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

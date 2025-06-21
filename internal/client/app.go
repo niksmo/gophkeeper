@@ -185,6 +185,8 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
+	const syncTick = time.Second * 5
+
 	syncRepo := repository.NewSync(a.log, a.storage)
 	signupS := syncservice.NewSignup(a.log, syncRepo)
 	signupH := synchandler.NewSignup(a.log, signupS, os.Stdout)
@@ -194,12 +196,12 @@ func (a *App) getSyncCommand() *command.Command {
 	signinH := synchandler.NewSignin(a.log, signinS, os.Stdout)
 	signinC := synccommand.NewSignin(signinH)
 
-	logoutS := syncservice.NewLogout(a.log)
+	logoutS := syncservice.NewLogout(a.log, syncRepo)
 	logoutH := synchandler.NewLogout(a.log, logoutS, os.Stdout)
 	logoutC := synccommand.NewLogout(logoutH)
 
-	syncS := syncservice.New(a.log, time.Second*5)
-	startC := synccommand.NewStart(syncS)
+	syncHS := syncservice.New(a.log, syncRepo, syncTick)
+	startC := synccommand.NewStart(syncHS)
 
 	syncC := synccommand.New()
 	syncC.AddCommand(signupC, signinC, logoutC, startC)

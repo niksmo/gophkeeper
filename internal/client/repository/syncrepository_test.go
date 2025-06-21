@@ -38,19 +38,23 @@ func newSyncSuite(t *testing.T) *syncRepoSuite {
 
 func TestSyncCreate(t *testing.T) {
 	st := newSyncSuite(t)
-	err := st.r.Create(st.ctx, 12345, time.Now())
-	assert.NoError(t, err)
+	expectedPID := 12345
+	expectedStartedAt := time.Now()
+	obj, err := st.r.Create(st.ctx, 12345, time.Now())
+	require.NoError(t, err)
+	assert.Equal(t, expectedPID, obj.PID)
+	assert.Zero(t, expectedStartedAt.Compare(obj.StartedAt))
 }
 
 func TestSyncReadLast(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
 		st := newSyncSuite(t)
-		err := st.r.Create(st.ctx, 12345, time.Now())
+		_, err := st.r.Create(st.ctx, 12345, time.Now())
 		require.NoError(t, err)
 
 		expectedPID := 777
 		expectedStartedAt := time.Now()
-		err = st.r.Create(st.ctx, expectedPID, expectedStartedAt)
+		_, err = st.r.Create(st.ctx, expectedPID, expectedStartedAt)
 		require.NoError(t, err)
 
 		last, err := st.r.ReadLast(st.ctx)
@@ -83,7 +87,7 @@ func TestSyncUpdate(t *testing.T) {
 		st := newSyncSuite(t)
 		pid := 12345
 		startedAt := time.Now().Add(-time.Hour)
-		err := st.r.Create(st.ctx, pid, startedAt)
+		_, err := st.r.Create(st.ctx, pid, startedAt)
 		require.NoError(t, err)
 
 		obj, err := st.r.ReadLast(st.ctx)

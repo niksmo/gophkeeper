@@ -83,6 +83,7 @@ func (st *suite) PrettyPanic() {
 func TestAddService(t *testing.T) {
 	const (
 		Add     = "Add"
+		Create  = "Create"
 		Encode  = "Encode"
 		SetKey  = "SetKey"
 		Encrypt = "Encrypt"
@@ -107,7 +108,7 @@ func TestAddService(t *testing.T) {
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Add, st.ctx, obj.Name, encryptedData,
+			Create, st.ctx, obj.Name, encryptedData,
 		).Return(expected, repoAddErr)
 
 		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
@@ -127,7 +128,7 @@ func TestAddService(t *testing.T) {
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Add, st.ctx, obj.Name, encryptedData,
+			Create, st.ctx, obj.Name, encryptedData,
 		).Return(expected, repoAddErr)
 
 		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
@@ -147,7 +148,7 @@ func TestAddService(t *testing.T) {
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Add, st.ctx, obj.Name, encryptedData,
+			Create, st.ctx, obj.Name, encryptedData,
 		).Return(expected, repoAddErr)
 
 		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
