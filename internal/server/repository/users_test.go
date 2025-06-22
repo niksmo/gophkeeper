@@ -18,6 +18,11 @@ type usersSuite struct {
 	repo    *UsersRepository
 }
 
+// Before runnint tests:
+//
+//  1. create test database
+//  2. run migrations
+//  3. set testing DSN to the GOPHKEEPER_TEST_DB env
 func newUsersSuite(t *testing.T) *usersSuite {
 	t.Helper()
 
