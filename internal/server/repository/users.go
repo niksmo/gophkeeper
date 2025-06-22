@@ -53,7 +53,7 @@ func (r *UsersRepository) Create(
 	return obj, nil
 }
 
-func (r *UsersRepository) Read(ctx context.Context, id int) (dto.User, error) {
+func (r *UsersRepository) Read(ctx context.Context, login string) (dto.User, error) {
 	const op = "UsersRepository.Read"
 
 	log := r.logger.WithOp(op)
@@ -61,16 +61,16 @@ func (r *UsersRepository) Read(ctx context.Context, id int) (dto.User, error) {
 	stmt := `
 	SELECT id, login, password, created_at, disabled
 	FROM users
-	WHERE id=?;
+	WHERE login=?;
 	`
 
 	var obj dto.User
-	err := r.db.QueryRowContext(ctx, stmt, id).Scan(
+	err := r.db.QueryRowContext(ctx, stmt, login).Scan(
 		&obj.ID, &obj.Login, &obj.Password, &obj.CreatedAt, &obj.Disabled,
 	)
 	if err != nil {
 		if r.noRowErr(err) {
-			log.Debug().Int("userID", id).Msg("user not exists")
+			log.Debug().Str("userLogin", login).Msg("user not exists")
 			return dto.User{}, fmt.Errorf("%s: %w", op, ErrNotExists)
 		}
 		log.Error().Err(err).Msg("failed to read user")

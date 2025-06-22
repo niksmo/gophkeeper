@@ -7,6 +7,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/server/config"
 	"github.com/niksmo/gophkeeper/internal/server/repository"
 	"github.com/niksmo/gophkeeper/internal/server/service/authservice"
+	"github.com/niksmo/gophkeeper/internal/server/service/tokenservice"
 	"github.com/niksmo/gophkeeper/internal/server/storage"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"google.golang.org/grpc"
@@ -30,26 +31,33 @@ func New(config *config.Config) *App {
 
 func (app *App) initLogger() {
 	app.logger = logger.New(app.config.LogLevel)
-	app.logger.Info().Str("init", "logger").Str("level", app.config.LogLevel).Send()
+	app.logger.Info().Str("init", "logger").Str(
+		"level", app.config.LogLevel,
+	).Send()
 }
 
 func (app *App) initStorage() {
 	app.storage = storage.New(app.logger, app.config.DSN)
-	app.logger.Info().Str("init", "storage").Str("dns", app.config.DSN).Send()
+	app.logger.Info().Str("init", "storage").Str(
+		"dns", app.config.DSN,
+	).Send()
 }
 
 func (app *App) initGRPCServer() {
 	app.gRPCServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(),
 	)
-	app.logger.Info().Str(
-		"init", "gRPCServer",
-	).Str("addr", app.config.TCPAddr.String()).Send()
+	app.logger.Info().Str("init", "gRPCServer").Str(
+		"addr", app.config.TCPAddr.String(),
+	).Send()
 }
 
 func (app *App) registerServices() {
+	userTP := tokenservice.NewUsersTokenProvider(
+		app.logger, app.config.TokenSecret, app.config.TokenTTL,
+	)
 	usersR := repository.NewUsersRepository(app.logger, app.storage)
-	authS := authservice.NewAuthService(app.logger, usersR, usersR)
+	authS := authservice.NewAuthService(app.logger, usersR, usersR, userTP)
 	api.RegisterAuthAPI(app.logger, app.gRPCServer, authS)
 	app.logger.Info().Str("register", "AuthService").Send()
 }

@@ -98,7 +98,7 @@ func TestUsers(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			user, err := st.repo.Read(t.Context(), expectedUser.ID)
+			user, err := st.repo.Read(t.Context(), expectedUser.Login)
 			require.NoError(t, err)
 			assert.Equal(t, expectedUser, user)
 		})
@@ -106,7 +106,7 @@ func TestUsers(t *testing.T) {
 		t.Run("NotExists", func(t *testing.T) {
 			st := newUsersSuite(t)
 
-			_, err := st.repo.Read(t.Context(), 1234)
+			_, err := st.repo.Read(t.Context(), "notExistsLogin")
 			require.ErrorIs(t, err, ErrNotExists)
 		})
 	})
