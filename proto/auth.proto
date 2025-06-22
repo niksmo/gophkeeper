@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "/proto/auth;authbp";
+
+service Auth {
+  rpc RegisterUser (RegUserRequest) returns (RegUserResponse) {};
+  rpc AuthorizeUser (AuthUserRequest) returns (AuthUserResponse){};
+}
+
+message RegUserRequest {
+    string login = 1;
+    string password = 2;
+}
+
+message RegUserResponse {
+    string token = 1;
+}
+
+message AuthUserRequest {
+    string login = 1;
+    string password = 2;
+}
+
+message AuthUserResponse {
+    string token = 1;
+}

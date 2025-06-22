@@ -14,8 +14,10 @@ type Logger struct {
 
 func New(level string) Logger {
 	setLevel(level)
-	zl := zerolog.New(os.Stderr).With().Timestamp().Logger()
-	return Logger{zl}
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMicro
+	return Logger{
+		zerolog.New(os.Stderr).With().Timestamp().Logger(),
+	}
 }
 
 func NewPretty(level string) Logger {
