@@ -11,7 +11,6 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/service"
 	"github.com/niksmo/gophkeeper/pkg/logger"
-	"github.com/rs/zerolog"
 )
 
 type (
@@ -51,7 +50,8 @@ type AddHandler[F any, O any] struct {
 
 func (h *AddHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 	const op = "AddHandler.Handle"
-	log := h.Log.With().Str("op", op).Logger()
+
+	log := h.Log.WithOp(op)
 
 	flags, err := h.GetFlagsHook(v)
 	if err != nil {
@@ -98,7 +98,7 @@ type ReadHandler[F any, O any] struct {
 
 func (h *ReadHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 	const op = "ReadHandler.Handle"
-	log := h.Log.With().Str("op", op).Logger()
+	log := h.Log.WithOp(op)
 
 	flags, err := h.GetFlagsHook(v)
 	if err != nil {
@@ -177,7 +177,7 @@ type EditHandler[F any, O any] struct {
 
 func (h *EditHandler[F, O]) Handle(ctx context.Context, v command.ValueGetter) {
 	const op = "EditHandler.Handle"
-	log := h.Log.With().Str("op", op).Logger()
+	log := h.Log.WithOp(op)
 
 	flags, err := h.GetFlagsHook(v)
 	if err != nil {
@@ -225,7 +225,7 @@ type RemoveHandler[F any] struct {
 
 func (h *RemoveHandler[F]) Handle(ctx context.Context, v command.ValueGetter) {
 	const op = "RemoveHandler.Handle"
-	log := h.Log.With().Str("op", op).Logger()
+	log := h.Log.WithOp(op)
 
 	flags, err := h.GetFlagsHook(v)
 	if err != nil {
@@ -307,7 +307,7 @@ func InternalError(w io.Writer, err error) {
 }
 
 func handleAlreadyExists(
-	l zerolog.Logger, w io.Writer, hName, oName string, err error,
+	l logger.Logger, w io.Writer, hName, oName string, err error,
 ) bool {
 	if !errors.Is(err, service.ErrAlreadyExists) {
 		return false
@@ -322,7 +322,7 @@ func handleAlreadyExists(
 }
 
 func handleNotExists(
-	l zerolog.Logger, w io.Writer, hName string, entryNum int, err error,
+	l logger.Logger, w io.Writer, hName string, entryNum int, err error,
 ) bool {
 	if !errors.Is(err, service.ErrNotExists) {
 		return false
@@ -337,7 +337,7 @@ func handleNotExists(
 	return true
 }
 
-func handleInvalidKey(l zerolog.Logger, w io.Writer, err error) bool {
+func handleInvalidKey(l logger.Logger, w io.Writer, err error) bool {
 	if !errors.Is(err, service.ErrInvalidKey) {
 		return false
 	}

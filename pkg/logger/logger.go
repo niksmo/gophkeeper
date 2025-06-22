@@ -37,3 +37,7 @@ func setLevel(level string) {
 	}
 	zerolog.SetGlobalLevel(lvl)
 }
+
+func (l Logger) WithOp(op string) Logger {
+	return Logger{l.With().Str("op", op).Logger()}
+}
