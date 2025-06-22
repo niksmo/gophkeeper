@@ -27,7 +27,7 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE,
+	deleted BOOLEAN NOT NULL DEFAULT FALSE,
 	sync_id INTEGER UNIQUE
 	);
 
@@ -37,7 +37,7 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE,
+	deleted BOOLEAN NOT NULL DEFAULT FALSE,
 	sync_id INTEGER UNIQUE
 	);
 
@@ -47,7 +47,7 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE,
+	deleted BOOLEAN NOT NULL DEFAULT FALSE,
 	sync_id INTEGER UNIQUE
 	);
 	
@@ -57,7 +57,7 @@ func init0(ctx context.Context, s Storage) error {
 	data BLOB,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
-	deleted BOOLEAN DEFAULT FALSE,
+	deleted BOOLEAN NOT NULL DEFAULT FALSE,
 	sync_id INTEGER UNIQUE
 	);
 

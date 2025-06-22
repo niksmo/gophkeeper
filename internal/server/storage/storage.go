@@ -21,7 +21,7 @@ func New(logger logger.Logger, dsn string) *Storage {
 	if err := db.Ping(); err != nil {
 		logger.Fatal().Err(err).Str("dsn", dsn).Msg("failed to ping sql db")
 	}
-	logger.Debug().Msg("database opens successfully")
+	logger.Info().Msg("database opens successfully")
 
 	return &Storage{db, logger}
 }
