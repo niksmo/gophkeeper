@@ -6,7 +6,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/server/api"
 	"github.com/niksmo/gophkeeper/internal/server/config"
 	"github.com/niksmo/gophkeeper/internal/server/repository"
-	"github.com/niksmo/gophkeeper/internal/server/service"
+	"github.com/niksmo/gophkeeper/internal/server/service/authservice"
 	"github.com/niksmo/gophkeeper/internal/server/storage"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"google.golang.org/grpc"
@@ -49,7 +49,7 @@ func (app *App) initGRPCServer() {
 
 func (app *App) registerServices() {
 	usersR := repository.NewUsersRepository(app.logger, app.storage)
-	authS := service.NewAuthService(app.logger, usersR, usersR)
+	authS := authservice.NewAuthService(app.logger, usersR, usersR)
 	api.RegisterAuthAPI(app.logger, app.gRPCServer, authS)
 	app.logger.Info().Str("register", "AuthService").Send()
 }

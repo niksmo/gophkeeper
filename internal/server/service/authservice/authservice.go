@@ -1,4 +1,4 @@
-package service
+package authservice
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type UserCreator interface {
 }
 
 type UserProvider interface {
-	Read(ctx context.Context, id int) (dto.User, error)
+	Read(ctx context.Context, userID int) (dto.User, error)
 }
 
 type AuthService struct {
