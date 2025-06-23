@@ -15,6 +15,8 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
+var ErrServerInternal = errors.New("internal server error")
+
 type (
 	SignupService interface {
 		Signup(ctx context.Context, login, password string) error
@@ -64,7 +66,7 @@ func (h *SignupHandler) Handle(ctx context.Context, v command.ValueGetter) {
 			os.Exit(1)
 		default:
 			log.Debug().Err(err).Msg("failed to register new user account")
-			handler.InternalError(h.Writer, err)
+			handler.InternalError(h.Writer, ErrServerInternal)
 			os.Exit(1)
 		}
 	}
@@ -101,7 +103,7 @@ func (h *SigninHandler) Handle(ctx context.Context, v command.ValueGetter) {
 			os.Exit(1)
 		default:
 			log.Debug().Err(err).Msg("failed to login")
-			handler.InternalError(h.Writer, err)
+			handler.InternalError(h.Writer, ErrServerInternal)
 			os.Exit(1)
 		}
 	}

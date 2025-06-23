@@ -19,6 +19,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/handler/texthandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/authservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/readservice"
@@ -27,7 +28,9 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
+	"github.com/niksmo/gophkeeper/pkg/grpccl"
 	"github.com/niksmo/gophkeeper/pkg/logger"
+	authbp "github.com/niksmo/gophkeeper/proto/auth"
 )
 
 type App struct {
@@ -185,14 +188,19 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
-	const syncTick = time.Second * 5
+	const (
+		syncTick   = time.Second * 5
+		serverAddr = "127.0.0.1:8000"
+	)
+	gRPCClient := grpccl.New(serverAddr, authbp.NewAuthClient)
+	authS := authservice.New(a.log, gRPCClient)
 
 	syncRepo := repository.NewSync(a.log, a.storage)
-	signupS := syncservice.NewSignup(a.log, syncRepo)
+	signupS := syncservice.NewSignup(a.log, syncRepo, authS)
 	signupH := synchandler.NewSignup(a.log, signupS, os.Stdout)
 	signupC := synccommand.NewSignup(signupH)
 
-	signinS := syncservice.NewSignin(a.log, syncRepo)
+	signinS := syncservice.NewSignin(a.log, syncRepo, authS)
 	signinH := synchandler.NewSignin(a.log, signinS, os.Stdout)
 	signinC := synccommand.NewSignin(signinH)
 

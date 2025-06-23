@@ -22,36 +22,52 @@ var (
 	ErrPIDConflict = errors.New("PID conflict")
 )
 
-type SyncRepo interface {
-	Create(ctx context.Context, pid int, start time.Time) (dto.SyncDTO, error)
-	ReadLast(context.Context) (dto.SyncDTO, error)
-	Update(context.Context, dto.SyncDTO) error
-}
+type (
+	SyncRepo interface {
+		Create(
+			ctx context.Context, pid int, start time.Time,
+		) (dto.SyncDTO, error)
+
+		ReadLast(context.Context) (dto.SyncDTO, error)
+		Update(context.Context, dto.SyncDTO) error
+	}
+
+	UserRegistrator interface {
+		RegisterNewUser(
+			ctx context.Context, login, password string,
+		) (token string, err error)
+	}
+
+	UserAuthorizer interface {
+		AuthorizeUser(
+			ctx context.Context, login, password string,
+		) (token string, err error)
+	}
+)
 
 type SignupService struct {
-	logger logger.Logger
-	repo   SyncRepo
+	logger          logger.Logger
+	repo            SyncRepo
+	userRegistrator UserRegistrator
 }
 
-func NewSignup(logger logger.Logger, repo SyncRepo) *SignupService {
-	return &SignupService{logger, repo}
+func NewSignup(
+	logger logger.Logger, repo SyncRepo, userRegistrator UserRegistrator,
+) *SignupService {
+	return &SignupService{logger, repo, userRegistrator}
 }
 
 func (s *SignupService) Signup(
 	ctx context.Context, login, password string,
 ) error {
 	const op = "SignupService.Signup"
-	log := s.logger.With().Str("op", op).Logger()
+	log := s.logger.WithOp(op)
 
-	// token, err := server.RegisterNewUser(login, password)
-	// if err != nil {
-	// log err
-	// handle invalid arg err (empty login or password)
-	// handle already exists err
-	// return human readable error
-	// }
+	token, err := s.userRegistrator.RegisterNewUser(ctx, login, password)
+	if err != nil {
+		return err
+	}
 
-	token := "myToken12345"
 	pid, err := startChildProcess(ctx, token, s.repo)
 	if err != nil {
 		log.Debug().Err(err).Send()
@@ -63,12 +79,14 @@ func (s *SignupService) Signup(
 }
 
 type SigninService struct {
-	logger logger.Logger
-	repo   SyncRepo
+	logger         logger.Logger
+	repo           SyncRepo
+	userAuthorizer UserAuthorizer
 }
 
-func NewSignin(logger logger.Logger, repo SyncRepo) *SigninService {
-	return &SigninService{logger, repo}
+func NewSignin(
+	logger logger.Logger, repo SyncRepo, userAuthorizer UserAuthorizer) *SigninService {
+	return &SigninService{logger, repo, userAuthorizer}
 }
 
 func (s *SigninService) Signin(
@@ -77,15 +95,11 @@ func (s *SigninService) Signin(
 	const op = "SigninService.Signup"
 	log := s.logger.With().Str("op", op).Logger()
 
-	// token, err := server.UserLogin(login, password)
-	// if err != nil {
-	// log err
-	// handle invalid arg err (empty login or password)
-	// handle invalid login or password
-	// return human readable error
-	// }
+	token, err := s.userAuthorizer.AuthorizeUser(ctx, login, password)
+	if err != nil {
+		return err
+	}
 
-	token := "myToken12345"
 	pid, err := startChildProcess(ctx, token, s.repo)
 	if err != nil {
 		log.Debug().Err(err).Send()
