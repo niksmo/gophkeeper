@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrSrcTooLong = errors.New("source length is too long, exceeds 72 bytes")
+	ErrTooLongSrc = errors.New("source length is too long, exceeds 72 bytes")
 )
 
 type CryptoHasher struct {
@@ -21,7 +21,7 @@ func NewCryptoHasher(cost int) *CryptoHasher {
 func (h *CryptoHasher) Generate(src []byte) ([]byte, error) {
 	hash, err := bcrypt.GenerateFromPassword(src, h.cost)
 	if err != nil && errors.Is(err, bcrypt.ErrPasswordTooLong) {
-		return nil, ErrSrcTooLong
+		return nil, ErrTooLongSrc
 	}
 	return hash, err
 }

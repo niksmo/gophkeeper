@@ -86,7 +86,6 @@ func (s *AuthService) RegisterNewUser(
 
 	token, err := s.getUserToken(userObj.ID)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to get user token")
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
