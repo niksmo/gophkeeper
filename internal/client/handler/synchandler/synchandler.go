@@ -15,7 +15,7 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
-var ErrServerInternal = errors.New("internal server error")
+var ErrServerConn = errors.New("synchronization server connection error")
 
 type (
 	SignupService interface {
@@ -66,7 +66,9 @@ func (h *SignupHandler) Handle(ctx context.Context, v command.ValueGetter) {
 			os.Exit(1)
 		default:
 			log.Debug().Err(err).Msg("failed to register new user account")
-			handler.InternalError(h.Writer, ErrServerInternal)
+			handler.InternalError(
+				h.Writer, fmt.Errorf("%w: %w", ErrServerConn, err),
+			)
 			os.Exit(1)
 		}
 	}
@@ -101,9 +103,17 @@ func (h *SigninHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		case errors.Is(err, service.ErrCredentials):
 			fmt.Fprintln(h.Writer, "invalid login or password")
 			os.Exit(1)
+		case errors.Is(err, syncservice.ErrPIDConflict):
+			fmt.Fprintln(
+				h.Writer,
+				"synchronization is working, logout and login for restart",
+			)
+			return
 		default:
 			log.Debug().Err(err).Msg("failed to login")
-			handler.InternalError(h.Writer, ErrServerInternal)
+			handler.InternalError(
+				h.Writer, fmt.Errorf("%w: %w", ErrServerConn, err),
+			)
 			os.Exit(1)
 		}
 	}

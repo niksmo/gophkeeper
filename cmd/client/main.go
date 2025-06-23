@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	logLevel = "debug"
-	dsn      = ".gophkeeper.db"
+	logLevel   = "error"
+	dsn        = ".gophkeeper.db"
+	serverAddr = "127.0.0.1:8000"
 )
 
 func main() {
@@ -18,6 +19,6 @@ func main() {
 		context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
 	)
 	defer stopFn()
-	app := client.New(logLevel, dsn)
+	app := client.New(logLevel, dsn, serverAddr)
 	app.Run(stopCtx)
 }

@@ -17,15 +17,16 @@ type GRPCClient[T any] struct {
 func New[T any](
 	addr string, clFabric func(grpc.ClientConnInterface) T,
 ) *GRPCClient[T] {
-	client := &GRPCClient[T]{addr: addr, clFabric: clFabric}
-	return client
+	return &GRPCClient[T]{addr: addr, clFabric: clFabric}
 }
 
 func (c *GRPCClient[T]) ConnClient() (T, error) {
 	dialOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
 	conn, err := grpc.NewClient(c.addr, dialOpt)
 	if err != nil {
-		return c.client, fmt.Errorf("failed to connect addr: %s", c.addr)
+		return c.client, fmt.Errorf(
+			"failed to create gRPC client, addr: %s", c.addr,
+		)
 	}
 	c.conn = conn
 	return c.clFabric(conn), nil

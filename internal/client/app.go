@@ -33,17 +33,22 @@ import (
 	authbp "github.com/niksmo/gophkeeper/proto/auth"
 )
 
+const (
+	syncTick = 5 * time.Second
+)
+
 type App struct {
-	log       logger.Logger
-	cmd       *command.Command
-	storage   *storage.Storage
-	encoder   *encode.Encoder
-	decoder   *encode.Decoder
-	encrypter *cipher.Encrypter
-	decrypter *cipher.Decrypter
+	log        logger.Logger
+	cmd        *command.Command
+	storage    *storage.Storage
+	encoder    *encode.Encoder
+	decoder    *encode.Decoder
+	encrypter  *cipher.Encrypter
+	decrypter  *cipher.Decrypter
+	serverAddr string
 }
 
-func New(logLevel, dsn string) *App {
+func New(logLevel, dsn, serverAddr string) *App {
 	log := logger.NewPretty(logLevel)
 	app := &App{
 		log,
@@ -53,6 +58,7 @@ func New(logLevel, dsn string) *App {
 		encode.NewDecoder(),
 		cipher.NewEncrypter(),
 		cipher.NewDecrypter(),
+		serverAddr,
 	}
 	app.registerCommands()
 	return app
@@ -188,11 +194,8 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
-	const (
-		syncTick   = time.Second * 5
-		serverAddr = "127.0.0.1:8000"
-	)
-	gRPCClient := grpccl.New(serverAddr, authbp.NewAuthClient)
+
+	gRPCClient := grpccl.New(a.serverAddr, authbp.NewAuthClient)
 	authS := authservice.New(a.log, gRPCClient)
 
 	syncRepo := repository.NewSync(a.log, a.storage)

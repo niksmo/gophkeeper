@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/niksmo/gophkeeper/internal/client/service"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	authbp "github.com/niksmo/gophkeeper/proto/auth"
 	"google.golang.org/grpc/codes"
@@ -13,7 +14,9 @@ import (
 )
 
 var (
-	ErrAlreadyExists = errors.New("user already exists")
+	ErrAlreadyExists  = service.ErrAlreadyExists
+	ErrCredentials    = service.ErrCredentials
+	ErrTimeoutExpired = errors.New("deadline exceeded")
 )
 
 const (
@@ -43,7 +46,6 @@ func (s *AuthService) RegisterNewUser(
 
 	authClient, err := s.clientConn.ConnClient()
 	if err != nil {
-		log.Debug().Err(err).Msg("failed to establish connection")
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 	defer s.clientConn.Close()
@@ -59,6 +61,12 @@ func (s *AuthService) RegisterNewUser(
 	resData, err := authClient.RegisterUser(ctx, reqData)
 	if err != nil {
 		switch status.Code(err) {
+		case codes.Unavailable:
+			log.Debug().Msg("unavailable")
+			return "", err
+		case codes.DeadlineExceeded:
+			log.Debug().Msg("timeout expired")
+			return "", err
 		case codes.AlreadyExists:
 			log.Debug().Msg("user already exists")
 			return "", fmt.Errorf("%s: %w", op, ErrAlreadyExists)
@@ -83,7 +91,6 @@ func (s *AuthService) AuthorizeUser(
 
 	authClient, err := s.clientConn.ConnClient()
 	if err != nil {
-		log.Error().Err(err).Msg("failed to establish connection")
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 	defer s.clientConn.Close()
@@ -99,9 +106,18 @@ func (s *AuthService) AuthorizeUser(
 	resData, err := authClient.AuthorizeUser(ctx, reqData)
 	if err != nil {
 		switch status.Code(err) {
+		case codes.Unavailable:
+			log.Debug().Msg("unavailable")
+			return "", err
+		case codes.DeadlineExceeded:
+			log.Debug().Msg("timeout expired")
+			return "", err
 		case codes.InvalidArgument:
 			log.Debug().Err(err).Msg("invalid provided data")
 			return "", fmt.Errorf("%s: %w", op, err)
+		case codes.Unauthenticated:
+			log.Debug().Err(err).Msg("invalid login or password")
+			return "", fmt.Errorf("%s: %w", op, ErrCredentials)
 		default:
 			log.Error().Err(err).Msg("failed to register new user")
 			return "", fmt.Errorf("%s: %w", op, err)

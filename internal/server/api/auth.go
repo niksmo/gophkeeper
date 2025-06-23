@@ -49,10 +49,10 @@ func (h *authHandler) RegisterUser(
 	)
 	if err != nil {
 		if errors.Is(err, authservice.ErrAlreadyExists) {
-			log.Debug().Str("login", in.Login).Msg("user already exists")
+			log.Debug().Err(err).Str(
+				"login", in.Login).Msg("user already exists")
 			return nil, status.Errorf(
-				codes.AlreadyExists,
-				"user with login %s already exists",
+				codes.AlreadyExists, "user with login %s already exists",
 				in.Login,
 			)
 		}
@@ -66,12 +66,25 @@ func (h *authHandler) RegisterUser(
 func (h *authHandler) AuthorizeUser(
 	ctx context.Context, in *authpb.AuthUserRequest,
 ) (*authpb.AuthUserResponse, error) {
+	const op = "authAPI.AuthorizeUser"
+	log := h.logger.WithOp(op)
+
 	// TODO: verify on pattern login and password
+
 	token, err := h.service.AuthorizeUser(
 		ctx, in.GetLogin(), in.GetPassword(),
 	)
 	if err != nil {
-		// TODO: handle errors
+		if errors.Is(err, authservice.ErrInvalidCredentials) {
+			log.Debug().Err(err).Str(
+				"login", in.Login).Msg("invalid credentials")
+			return nil, status.Error(
+				codes.Unauthenticated, "invalid login or password",
+			)
+		}
+		log.Error().Err(err).Msg("internal error")
+		return nil, status.Error(codes.Internal, "internal error")
+
 	}
 
 	return &authpb.AuthUserResponse{Token: token}, nil
