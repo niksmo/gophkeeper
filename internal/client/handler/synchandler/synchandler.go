@@ -73,7 +73,7 @@ func (h *SignupHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		}
 	}
 
-	writeSyncStart(h.Writer)
+	writeOutput(h.Writer)
 }
 
 type SigninHandler struct {
@@ -118,7 +118,7 @@ func (h *SigninHandler) Handle(ctx context.Context, v command.ValueGetter) {
 		}
 	}
 
-	writeSyncStart(h.Writer)
+	writeOutput(h.Writer)
 }
 
 type LogoutHandler struct {
@@ -166,6 +166,6 @@ func getAuthFlags(v command.ValueGetter) (l, p string, err error) {
 	return
 }
 
-func writeSyncStart(w io.Writer) {
+func writeOutput(w io.Writer) {
 	fmt.Fprintf(w, "synchronization started\n")
 }

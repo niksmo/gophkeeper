@@ -194,7 +194,6 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
-
 	gRPCClient := grpccl.New(a.serverAddr, authbp.NewAuthClient)
 	authS := authservice.New(a.log, gRPCClient)
 
