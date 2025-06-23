@@ -9,6 +9,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/server/service/authservice"
 	"github.com/niksmo/gophkeeper/internal/server/service/tokenservice"
 	"github.com/niksmo/gophkeeper/internal/server/storage"
+	"github.com/niksmo/gophkeeper/pkg/hasher"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"google.golang.org/grpc"
 )
@@ -53,11 +54,20 @@ func (app *App) initGRPCServer() {
 }
 
 func (app *App) registerServices() {
+	cryptoHasher := hasher.NewCryptoHasher(app.config.HashCost)
 	userTP := tokenservice.NewUsersTokenProvider(
 		app.logger, app.config.TokenSecret, app.config.TokenTTL,
 	)
 	usersR := repository.NewUsersRepository(app.logger, app.storage)
-	authS := authservice.NewAuthService(app.logger, usersR, usersR, userTP)
+	authS := authservice.New(
+		authservice.ServiceDeps{
+			Logger:        app.logger,
+			Hasher:        cryptoHasher,
+			UserCreator:   usersR,
+			UserProvider:  usersR,
+			TokenProvider: userTP,
+		},
+	)
 	api.RegisterAuthAPI(app.logger, app.gRPCServer, authS)
 	app.logger.Info().Str("register", "AuthService").Send()
 }

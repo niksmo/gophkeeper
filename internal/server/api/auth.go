@@ -10,11 +10,11 @@ import (
 
 type AuthService interface {
 	RegisterNewUser(
-		ctx context.Context, login, password string,
+		ctx context.Context, login string, password []byte,
 	) (token string, err error)
 
 	AuthorizeUser(
-		ctx context.Context, login, password string,
+		ctx context.Context, login string, password []byte,
 	) (token string, err error)
 }
 
@@ -35,7 +35,7 @@ func RegisterAuthAPI(
 func (auth *authAPI) RegisterUser(
 	ctx context.Context, in *authpb.RegUserRequest,
 ) (*authpb.RegUserResponse, error) {
-	// TODO: check login and password
+	// TODO: verify on pattern login and password
 	token, err := auth.service.RegisterNewUser(
 		ctx, in.GetLogin(), in.GetPassword(),
 	)
@@ -49,7 +49,7 @@ func (auth *authAPI) RegisterUser(
 func (auth *authAPI) AuthorizeUser(
 	ctx context.Context, in *authpb.AuthUserRequest,
 ) (*authpb.AuthUserResponse, error) {
-	// TODO: check login and password
+	// TODO: verify on pattern login and password
 	token, err := auth.service.AuthorizeUser(
 		ctx, in.GetLogin(), in.GetPassword(),
 	)

@@ -58,7 +58,7 @@ func TestUsers(t *testing.T) {
 			st := newUsersSuite(t)
 			expectedID := 1
 			expectedLogin := "testLogin"
-			expectedPassword := "testPassword"
+			expectedPassword := []byte("testPassword")
 			expectedCreatedAt := time.Now()
 			expectedDisable := false
 
@@ -68,7 +68,7 @@ func TestUsers(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, expectedID, user.ID)
 			assert.Equal(t, expectedLogin, user.Login)
-			assert.Equal(t, expectedPassword, user.Password)
+			assert.Equal(t, expectedPassword, user.PasswordHash)
 			assert.True(
 				t, user.CreatedAt.Sub(expectedCreatedAt) < time.Second*5,
 			)
@@ -78,7 +78,7 @@ func TestUsers(t *testing.T) {
 		t.Run("AlreadyExists", func(t *testing.T) {
 			st := newUsersSuite(t)
 			login := "testLogin"
-			password := "testPassword"
+			password := []byte("testPassword")
 
 			_, err := st.repo.Create(t.Context(), login, password)
 			require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestUsers(t *testing.T) {
 			st := newUsersSuite(t)
 
 			expectedUser, err := st.repo.Create(
-				t.Context(), "testLogin", "testPassword",
+				t.Context(), "testLogin", []byte("testPassword"),
 			)
 			require.NoError(t, err)
 

@@ -4,15 +4,14 @@
 // 	protoc        v5.29.3
 // source: proto/auth.proto
 
-package authpb
+package authbp
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -25,7 +24,7 @@ const (
 type RegUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Login         string                 `protobuf:"bytes,1,opt,name=login,proto3" json:"login,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Password      []byte                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -67,11 +66,11 @@ func (x *RegUserRequest) GetLogin() string {
 	return ""
 }
 
-func (x *RegUserRequest) GetPassword() string {
+func (x *RegUserRequest) GetPassword() []byte {
 	if x != nil {
 		return x.Password
 	}
-	return ""
+	return nil
 }
 
 type RegUserResponse struct {
@@ -121,7 +120,7 @@ func (x *RegUserResponse) GetToken() string {
 type AuthUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Login         string                 `protobuf:"bytes,1,opt,name=login,proto3" json:"login,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Password      []byte                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -163,11 +162,11 @@ func (x *AuthUserRequest) GetLogin() string {
 	return ""
 }
 
-func (x *AuthUserRequest) GetPassword() string {
+func (x *AuthUserRequest) GetPassword() []byte {
 	if x != nil {
 		return x.Password
 	}
-	return ""
+	return nil
 }
 
 type AuthUserResponse struct {
@@ -221,17 +220,17 @@ const file_proto_auth_proto_rawDesc = "" +
 	"\x10proto/auth.proto\x12\x04auth\"B\n" +
 	"\x0eRegUserRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"'\n" +
+	"\bpassword\x18\x02 \x01(\fR\bpassword\"'\n" +
 	"\x0fRegUserResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"C\n" +
 	"\x0fAuthUserRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"(\n" +
+	"\bpassword\x18\x02 \x01(\fR\bpassword\"(\n" +
 	"\x10AuthUserResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token2\x87\x01\n" +
 	"\x04Auth\x12=\n" +
 	"\fRegisterUser\x12\x14.auth.RegUserRequest\x1a\x15.auth.RegUserResponse\"\x00\x12@\n" +
-	"\rAuthorizeUser\x12\x15.auth.AuthUserRequest\x1a\x16.auth.AuthUserResponse\"\x00B\x16Z\x14/proto/auth;grpcauthb\x06proto3"
+	"\rAuthorizeUser\x12\x15.auth.AuthUserRequest\x1a\x16.auth.AuthUserResponse\"\x00B\x14Z\x12/proto/auth;authbpb\x06proto3"
 
 var (
 	file_proto_auth_proto_rawDescOnce sync.Once

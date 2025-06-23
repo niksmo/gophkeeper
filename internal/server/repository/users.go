@@ -22,7 +22,7 @@ func NewUsersRepository(logger logger.Logger, storage Storage) *UsersRepository 
 }
 
 func (r *UsersRepository) Create(
-	ctx context.Context, login, password string,
+	ctx context.Context, login string, pwdHash []byte,
 ) (dto.User, error) {
 	const op = "UsersRepository.Create"
 
@@ -36,9 +36,9 @@ func (r *UsersRepository) Create(
 
 	var obj dto.User
 	err := r.db.QueryRowContext(
-		ctx, stmt, login, password, time.Now(),
+		ctx, stmt, login, pwdHash, time.Now(),
 	).Scan(
-		&obj.ID, &obj.Login, &obj.Password, &obj.CreatedAt, &obj.Disabled,
+		&obj.ID, &obj.Login, &obj.PasswordHash, &obj.CreatedAt, &obj.Disabled,
 	)
 
 	if err != nil {
@@ -66,7 +66,7 @@ func (r *UsersRepository) Read(ctx context.Context, login string) (dto.User, err
 
 	var obj dto.User
 	err := r.db.QueryRowContext(ctx, stmt, login).Scan(
-		&obj.ID, &obj.Login, &obj.Password, &obj.CreatedAt, &obj.Disabled,
+		&obj.ID, &obj.Login, &obj.PasswordHash, &obj.CreatedAt, &obj.Disabled,
 	)
 	if err != nil {
 		if r.noRowErr(err) {

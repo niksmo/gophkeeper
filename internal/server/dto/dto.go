@@ -3,9 +3,9 @@ package dto
 import "time"
 
 type User struct {
-	ID        int
-	Login     string
-	Password  string
-	CreatedAt time.Time
-	Disabled  bool
+	ID           int
+	Login        string
+	PasswordHash []byte
+	CreatedAt    time.Time
+	Disabled     bool
 }

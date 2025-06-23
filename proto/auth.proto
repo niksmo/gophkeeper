@@ -11,7 +11,7 @@ service Auth {
 
 message RegUserRequest {
     string login = 1;
-    string password = 2;
+    bytes password = 2;
 }
 
 message RegUserResponse {
@@ -20,7 +20,7 @@ message RegUserResponse {
 
 message AuthUserRequest {
     string login = 1;
-    string password = 2;
+    bytes password = 2;
 }
 
 message AuthUserResponse {

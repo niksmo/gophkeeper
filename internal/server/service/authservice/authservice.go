@@ -15,43 +15,66 @@ var (
 	ErrInvalidCredentials = errors.New("the login or password is incorrect")
 )
 
-type UserTokenProvider interface {
-	GetTokenString(userID int) (string, error)
-}
+type (
+	UserTokenProvider interface {
+		GetTokenString(userID int) (string, error)
+	}
 
-type UserCreator interface {
-	Create(ctx context.Context, login, password string) (dto.User, error)
-}
+	Hasher interface {
+		Generate([]byte) ([]byte, error)
+		Compare(src, hash []byte) error
+	}
 
-type UserProvider interface {
-	Read(ctx context.Context, login string) (dto.User, error)
+	UserCreator interface {
+		Create(
+			ctx context.Context, login string, password []byte,
+		) (dto.User, error)
+	}
+
+	UserProvider interface {
+		Read(ctx context.Context, login string) (dto.User, error)
+	}
+)
+
+type ServiceDeps struct {
+	Logger        logger.Logger
+	Hasher        Hasher
+	UserCreator   UserCreator
+	UserProvider  UserProvider
+	TokenProvider UserTokenProvider
 }
 
 type AuthService struct {
 	logger        logger.Logger
+	hasher        Hasher
 	userCreator   UserCreator
 	userProvider  UserProvider
 	tokenProvider UserTokenProvider
 }
 
-func NewAuthService(
-	logger logger.Logger,
-	userCreator UserCreator,
-	userProvider UserProvider,
-	tokenProvider UserTokenProvider,
-) *AuthService {
+func New(deps ServiceDeps) *AuthService {
 	return &AuthService{
-		logger, userCreator, userProvider, tokenProvider,
+		deps.Logger,
+		deps.Hasher,
+		deps.UserCreator,
+		deps.UserProvider,
+		deps.TokenProvider,
 	}
 }
 
 func (s *AuthService) RegisterNewUser(
-	ctx context.Context, login, password string,
+	ctx context.Context, login string, password []byte,
 ) (string, error) {
 	const op = "AuthService.RegisterNewUser"
 	log := s.logger.WithOp(op)
 
-	userObj, err := s.userCreator.Create(ctx, login, password)
+	hashedPassword, err := s.hasher.Generate(password)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate password hash")
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	userObj, err := s.userCreator.Create(ctx, login, hashedPassword)
 	if err != nil {
 		if errors.Is(err, repository.ErrAlreadyExists) {
 			log.Debug().Str("login", login).Msg("already exists")
@@ -71,7 +94,7 @@ func (s *AuthService) RegisterNewUser(
 }
 
 func (s *AuthService) AuthorizeUser(
-	ctx context.Context, login, password string,
+	ctx context.Context, login string, password []byte,
 ) (string, error) {
 	const op = "AuthService.AuthorizeUser"
 	log := s.logger.WithOp(op)
@@ -84,6 +107,11 @@ func (s *AuthService) AuthorizeUser(
 		}
 		log.Error().Err(err).Msg("failed to get users data")
 		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := s.hasher.Compare(userObj.PasswordHash, password); err != nil {
+		log.Debug().Str("userLogin", login).Msg("invalid password")
+		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
 	token, err := s.getUserToken(userObj.ID)
