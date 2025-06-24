@@ -29,9 +29,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
-	"github.com/niksmo/gophkeeper/pkg/grpccl"
 	"github.com/niksmo/gophkeeper/pkg/logger"
-	authbp "github.com/niksmo/gophkeeper/proto/auth"
 )
 
 type App struct {
@@ -193,12 +191,12 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
-	gRPCClient := grpccl.New(a.serverAddr, authbp.NewAuthClient)
+	authClient := authservice.NewGRPCAuthClient(a.log, a.serverAddr)
 	syncRepo := repository.NewSync(a.log, a.storage)
 
 	syncStarter := syncservice.NewSyncRunner(a.log, syncRepo)
-	userRegistrar := authservice.NewUserRegistrar(a.log, gRPCClient, syncStarter)
-	userAuthorizer := authservice.NewUserAuthorizer(a.log, gRPCClient, syncStarter)
+	userRegistrar := authservice.NewUserRegistrar(a.log, authClient, syncStarter)
+	userAuthorizer := authservice.NewUserAuthorizer(a.log, authClient, syncStarter)
 
 	signupH := authhandler.NewSignup(a.log, userRegistrar, os.Stdout)
 	signupC := synccommand.NewSignup(signupH)
