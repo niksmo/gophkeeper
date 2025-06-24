@@ -9,11 +9,14 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client"
 )
 
-const (
+const syncTick = 5 * time.Second
+
+var (
 	logLevel   = "debug"
 	dsn        = ".gophkeeper.db"
 	serverAddr = "127.0.0.1:8000"
-	syncTick   = 5 * time.Second
+	version    = "N/A"
+	buildDate  = "N/A"
 )
 
 func main() {
@@ -21,6 +24,15 @@ func main() {
 		context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
 	)
 	defer stopFn()
-	app := client.New(logLevel, dsn, serverAddr, syncTick)
+	app := client.New(
+		client.Opt{
+			LogLevel:   logLevel,
+			DSN:        dsn,
+			ServerAddr: serverAddr,
+			Version:    version,
+			BuildDate:  buildDate,
+			SyncTick:   syncTick,
+		},
+	)
 	app.Run(stopCtx)
 }

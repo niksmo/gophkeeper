@@ -5,6 +5,7 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/server/api"
 	"github.com/niksmo/gophkeeper/internal/server/config"
+	"github.com/niksmo/gophkeeper/internal/server/interceptors"
 	"github.com/niksmo/gophkeeper/internal/server/repository"
 	"github.com/niksmo/gophkeeper/internal/server/service/authservice"
 	"github.com/niksmo/gophkeeper/internal/server/service/tokenservice"
@@ -46,7 +47,7 @@ func (app *App) initStorage() {
 
 func (app *App) initGRPCServer() {
 	app.gRPCServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(),
+		grpc.ChainUnaryInterceptor(interceptors.WithLog(app.logger)),
 	)
 	app.logger.Info().Str("init", "gRPCServer").Str(
 		"addr", app.config.TCPAddr.String(),

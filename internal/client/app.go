@@ -32,6 +32,15 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
+type Opt struct {
+	LogLevel   string
+	DSN        string
+	ServerAddr string
+	Version    string
+	BuildDate  string
+	SyncTick   time.Duration
+}
+
 type App struct {
 	log        logger.Logger
 	cmd        *command.Command
@@ -44,18 +53,18 @@ type App struct {
 	syncTick   time.Duration
 }
 
-func New(logLevel, dsn, serverAddr string, syncTick time.Duration) *App {
-	log := logger.NewPretty(logLevel)
+func New(opt Opt) *App {
+	log := logger.NewPretty(opt.LogLevel)
 	app := &App{
 		log,
-		command.NewRootCommand(),
-		storage.New(log, dsn),
+		command.NewRootCommand(opt.Version, opt.BuildDate),
+		storage.New(log, opt.DSN),
 		encode.NewEncoder(),
 		encode.NewDecoder(),
 		cipher.NewEncrypter(),
 		cipher.NewDecrypter(),
-		serverAddr,
-		syncTick,
+		opt.ServerAddr,
+		opt.SyncTick,
 	}
 	app.registerCommands()
 	return app

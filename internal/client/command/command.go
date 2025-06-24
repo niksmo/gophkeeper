@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -46,10 +47,11 @@ type (
 	}
 )
 
-func NewRootCommand() *Command {
+func NewRootCommand(version, buildDate string) *Command {
 	var c = &cobra.Command{
-		Use:   "gophkeeper",
-		Short: "gophkeeper is a reliable storage of your personal data",
+		Use:     "gophkeeper",
+		Short:   "gophkeeper is a reliable storage of your personal data",
+		Version: fmt.Sprintf("v%s %s", version, buildDate),
 	}
 	c.CompletionOptions.DisableDefaultCmd = true
 	return &Command{c}
