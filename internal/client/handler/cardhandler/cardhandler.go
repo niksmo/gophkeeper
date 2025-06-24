@@ -50,15 +50,18 @@ func NewAdd(
 			errs = append(errs, err)
 		}
 
-		cvc := getCVCValue(v)
+		holderName, err := getHolderNameValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
 
 		err = handler.RequiredFlagsErr(errs)
 
 		dto := dto.BankCard{
-			Name:    name,
-			Number:  cardNum,
-			ExpDate: expDate,
-			CVC:     cvc,
+			Name:       name,
+			Number:     cardNum,
+			ExpDate:    expDate,
+			HolderName: holderName,
 		}
 
 		return AddFlags{key, dto}, err
@@ -110,8 +113,8 @@ func NewRead(
 
 	h.GetOutputHook = func(_ ReadFlags, entryNum int, dto dto.BankCard) string {
 		return fmt.Sprintf(
-			"the bank card with entry %d: name=%q number=%q exp=%q cvc=%q\n",
-			entryNum, dto.Name, dto.Number, dto.ExpDate, dto.CVC,
+			"the bank card with entry %d: name=%q number=%q exp=%q holder=%q\n",
+			entryNum, dto.Name, dto.Number, dto.ExpDate, dto.HolderName,
 		)
 	}
 
@@ -173,15 +176,18 @@ func NewEdit(
 			errs = append(errs, err)
 		}
 
-		cvc := getCVCValue(v)
+		holderName, err := getHolderNameValue(v)
+		if err != nil {
+			errs = append(errs, err)
+		}
 
 		err = handler.RequiredFlagsErr(errs)
 
 		dto := dto.BankCard{
-			Name:    name,
-			Number:  cardNum,
-			ExpDate: expDate,
-			CVC:     cvc,
+			Name:       name,
+			Number:     cardNum,
+			ExpDate:    expDate,
+			HolderName: holderName,
 		}
 
 		return EditFlags{key, entryNum, dto}, err
@@ -243,7 +249,10 @@ func getExpDateValue(v command.ValueGetter) (string, error) {
 	return expDate, nil
 }
 
-func getCVCValue(v command.ValueGetter) string {
-	cvc, _ := v.GetString(cardcommand.CVVFlag)
-	return cvc
+func getHolderNameValue(v command.ValueGetter) (string, error) {
+	holderName, err := v.GetString(cardcommand.HolderNameFlag)
+	if err != nil || handler.IsZeroStr(holderName) {
+		return "", fmt.Errorf("--%s", cardcommand.HolderNameFlag)
+	}
+	return holderName, nil
 }

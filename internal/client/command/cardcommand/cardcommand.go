@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	MasterKeyFlag = command.MasterKeyFlag
-	NameFlag      = command.NameFlag
-	EntryNumFlag  = command.EntryNumFlag
-	CardNumFlag   = "card"
-	ExpDateFlag   = "exp"
-	CVVFlag       = "cvv"
+	MasterKeyFlag  = command.MasterKeyFlag
+	NameFlag       = command.NameFlag
+	EntryNumFlag   = command.EntryNumFlag
+	CardNumFlag    = "number"
+	ExpDateFlag    = "exp"
+	HolderNameFlag = "holder"
 )
 
 const (
@@ -27,17 +27,14 @@ const (
 	entryNumDefault   = command.EntryNumDefault
 	entryNumUsage     = "entry number of stored bank card (required)"
 
-	cardNumShorthand = "c"
-	cardNumDefault   = ""
-	cardNumUsage     = "bank card number (required)"
+	cardNumDefault = ""
+	cardNumUsage   = "bank card number (required)"
 
-	expDateShorthand = "x"
-	expDateDefault   = ""
-	expDateUsage     = "bank card validity period (required)"
+	expDateDefault = ""
+	expDateUsage   = "bank card validity period e.g. 12/2025 (required)"
 
-	cvcShorthand = "v"
-	cvcDefault   = ""
-	cvcUsage     = "bank card cvv/cvc"
+	holderNameDefault = ""
+	hoderNameUsage    = "cardhodler name on the bank card (required)"
 )
 
 func New() *command.Command {
@@ -64,22 +61,23 @@ func NewAdd(h command.Handler) *command.Command {
 
 	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
 
-	flagSet.StringP(
-		CardNumFlag, cardNumShorthand, cardNumDefault, cardNumUsage,
+	flagSet.String(
+		CardNumFlag, cardNumDefault, cardNumUsage,
 	)
 
-	flagSet.StringP(
-		ExpDateFlag, expDateShorthand, expDateDefault, expDateUsage,
+	flagSet.String(
+		ExpDateFlag, expDateDefault, expDateUsage,
 	)
 
-	flagSet.StringP(
-		CVVFlag, cvcShorthand, cvcDefault, cvcUsage,
+	flagSet.String(
+		HolderNameFlag, holderNameDefault, hoderNameUsage,
 	)
 
 	c.MarkFlagRequired(MasterKeyFlag)
 	c.MarkFlagRequired(NameFlag)
 	c.MarkFlagRequired(CardNumFlag)
 	c.MarkFlagRequired(ExpDateFlag)
+	c.MarkFlagRequired(HolderNameFlag)
 
 	return &command.Command{Command: c}
 }
@@ -137,16 +135,16 @@ func NewEdit(h command.Handler) *command.Command {
 
 	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
 
-	flagSet.StringP(
-		CardNumFlag, cardNumShorthand, cardNumDefault, cardNumUsage,
+	flagSet.String(
+		CardNumFlag, cardNumDefault, cardNumUsage,
 	)
 
-	flagSet.StringP(
-		ExpDateFlag, expDateShorthand, expDateDefault, expDateUsage,
+	flagSet.String(
+		ExpDateFlag, expDateDefault, expDateUsage,
 	)
 
-	flagSet.StringP(
-		CVVFlag, cvcShorthand, cvcDefault, cvcUsage,
+	flagSet.String(
+		HolderNameFlag, holderNameDefault, hoderNameUsage,
 	)
 
 	c.MarkFlagRequired(MasterKeyFlag)
@@ -154,7 +152,7 @@ func NewEdit(h command.Handler) *command.Command {
 	c.MarkFlagRequired(NameFlag)
 	c.MarkFlagRequired(CardNumFlag)
 	c.MarkFlagRequired(ExpDateFlag)
-
+	c.MarkFlagRequired(HolderNameFlag)
 	return &command.Command{Command: c}
 }
 
