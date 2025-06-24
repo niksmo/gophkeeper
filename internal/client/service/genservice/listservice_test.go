@@ -1,47 +1,47 @@
-package listservice_test
+package genservice_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/genservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-type repo struct {
+type MockListNames struct {
 	mock.Mock
 }
 
-func (r *repo) ListNames(ctx context.Context) ([][2]string, error) {
+func (r *MockListNames) ListNames(ctx context.Context) ([][2]string, error) {
 	args := r.Called(ctx)
 	return args.Get(0).([][2]string), args.Error(1)
 }
 
-type suite struct {
+type ListSuite struct {
 	t       *testing.T
 	ctx     context.Context
 	log     logger.Logger
-	repo    *repo
-	service *listservice.ListService
+	repo    *MockListNames
+	service *genservice.ListService
 }
 
-func newListSuite(t *testing.T) *suite {
+func newListSuite(t *testing.T) *ListSuite {
 	ctx := context.Background()
 	log := logger.NewPretty("debug")
-	repo := &repo{}
-	service := listservice.New(log, repo)
-	return &suite{
+	repo := &MockListNames{}
+	service := genservice.NewList(log, repo)
+	return &ListSuite{
 		t, ctx, log,
 		repo,
 		service,
 	}
 }
 
-func (st *suite) PrettyPanic() {
+func (st *ListSuite) PrettyPanic() {
 	st.t.Helper()
 	if r := recover(); r != nil {
 		st.t.Log(r)

@@ -33,68 +33,84 @@ func New() *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewSignup(h command.Handler) *command.Command {
+type AuthFlags struct {
+	Login, Password string
+}
+
+func NewSignup(h command.GenCmdHandler[AuthFlags]) *command.Command {
+	var fv AuthFlags
+
 	c := &cobra.Command{
 		Use:   "signup",
 		Short: "Register new account and start synchronization",
 		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
+			h.Handle(cmd.Context(), fv)
 		},
 	}
 	flagSet := c.Flags()
 
-	flagSet.StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+	flagSet.StringVarP(&fv.Login,
+		LoginFlag, loginShorthand, loginDefault, loginUsage)
 
-	flagSet.StringP(
-		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage,
-	)
+	flagSet.StringVarP(&fv.Password,
+		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage)
 
 	c.MarkFlagRequired(LoginFlag)
 	c.MarkFlagRequired(PasswordFlag)
 	return &command.Command{Command: c}
 }
 
-func NewSignin(h command.Handler) *command.Command {
+func NewSignin(h command.GenCmdHandler[AuthFlags]) *command.Command {
+	var fv AuthFlags
+
 	c := &cobra.Command{
 		Use:   "signin",
 		Short: "Login and start synchronization",
 		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
+			h.Handle(cmd.Context(), fv)
 		},
 	}
 	flagSet := c.Flags()
 
-	flagSet.StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+	flagSet.StringVarP(&fv.Login,
+		LoginFlag, loginShorthand, loginDefault, loginUsage)
 
-	flagSet.StringP(
-		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage,
-	)
+	flagSet.StringVarP(&fv.Password,
+		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage)
 
 	c.MarkFlagRequired(LoginFlag)
 	c.MarkFlagRequired(PasswordFlag)
 	return &command.Command{Command: c}
 }
 
-func NewLogout(h command.Handler) *command.Command {
+func NewLogout(h command.NoFlagsCmdHandler) *command.Command {
 	c := &cobra.Command{
 		Use:   "logout",
 		Short: "Logout and stop synchronization",
 		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
+			h.Handle(cmd.Context())
 		},
 	}
 	return &command.Command{Command: c}
 }
 
-func NewStart(h command.Handler) *command.Command {
+type StartCmdFlags struct {
+	Token string
+}
+
+func NewStart(h command.GenCmdHandler[StartCmdFlags]) *command.Command {
+	var fv StartCmdFlags
 	c := &cobra.Command{
-		Use: "start",
+		Hidden: true,
+		Use:    "start",
 		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
+			h.Handle(cmd.Context(), fv)
 		},
 	}
-	c.Hidden = true
-	c.Flags().StringP(TokenFlag, tokenShorthand, tokenDefault, tokenUsage)
+	c.Flags().StringVarP(&fv.Token,
+		TokenFlag, tokenShorthand, tokenDefault, tokenUsage,
+	)
 	c.MarkFlagRequired(TokenFlag)
+
 	return &command.Command{Command: c}
 }

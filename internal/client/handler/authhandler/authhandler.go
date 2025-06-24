@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/synccommand"
 	"github.com/niksmo/gophkeeper/internal/client/handler"
 	"github.com/niksmo/gophkeeper/internal/client/service/authservice"
@@ -30,150 +29,120 @@ type (
 )
 
 type SignupHandler struct {
-	logger  logger.Logger
-	service UserRegistrar
-	writer  io.Writer
+	l logger.Logger
+	s UserRegistrar
+	w io.Writer
 }
 
 func NewSignup(l logger.Logger, s UserRegistrar, w io.Writer) *SignupHandler {
 	return &SignupHandler{l, s, w}
 }
 
-func (h *SignupHandler) Handle(ctx context.Context, v command.ValueGetter) {
+func (h *SignupHandler) Handle(ctx context.Context, fv synccommand.AuthFlags) {
 	const op = "SignupHandler.Handle"
-	log := h.logger.WithOp(op)
 
-	login, password, err := getAuthFlags(v)
-	if err != nil {
-		log.Debug().Err(err).Send()
-		fmt.Fprintln(h.writer, err.Error())
-		os.Exit(1)
-	}
+	log := h.l.WithOp(op)
 
 	// TODO: verify login and password to match pattern
 
-	err = h.service.RegisterUser(ctx, login, password)
+	err := h.s.RegisterUser(ctx, fv.Login, fv.Password)
 	if err != nil {
-		switch {
-		case errors.Is(err, authservice.ErrAlreadyExists):
-			h.printOutput("the login '%s' already exists", login)
-			os.Exit(1)
-		case errors.Is(err, authservice.ErrSyncAlreadyRunning):
-			h.printOutput(
-				"synchronization is working, logout and login for restart",
-			)
-			os.Exit(1)
-		default:
-			log.Debug().Err(err).Msg("failed to register new user account")
-			handler.InternalError(
-				h.writer, fmt.Errorf("%s: %w", op, err),
-			)
-			os.Exit(1)
-		}
+		handler.HandleAlreadyExistsErr(err, log, h.w, "account", "login")
+		handleSyncRunningErr(err, h.w)
+		handler.HandleUnexpectedErr(err, log, h.w)
 	}
 
 	h.printOutput("synchronization started")
 }
 
 func (h *SignupHandler) printOutput(formated string, args ...any) {
-	fmt.Fprintf(h.writer, formated, args...)
-	fmt.Fprintln(h.writer)
+	fmt.Fprintf(h.w, formated, args...)
+	fmt.Fprintln(h.w)
 }
 
 type SigninHandler struct {
-	logger  logger.Logger
-	service UserAuthorizer
-	writer  io.Writer
+	l logger.Logger
+	s UserAuthorizer
+	w io.Writer
 }
 
 func NewSignin(l logger.Logger, s UserAuthorizer, w io.Writer) *SigninHandler {
 	return &SigninHandler{l, s, w}
 }
 
-func (h *SigninHandler) Handle(ctx context.Context, v command.ValueGetter) {
+func (h *SigninHandler) Handle(ctx context.Context, fv synccommand.AuthFlags) {
 	const op = "SigninHandler.Handle"
-	log := h.logger.WithOp(op)
 
-	login, password, err := getAuthFlags(v)
-	if err != nil {
-		log.Debug().Err(err).Send()
-		fmt.Fprintln(h.writer, err.Error())
-		os.Exit(1)
-	}
+	log := h.l.WithOp(op)
 
 	// TODO: verify login and password to match pattern
 
-	err = h.service.AuthorizeUser(ctx, login, password)
+	err := h.s.AuthorizeUser(ctx, fv.Login, fv.Password)
 	if err != nil {
-		switch {
-		case errors.Is(err, authservice.ErrCredentials):
-			h.printOutput("invalid login or password")
-			os.Exit(1)
-		case errors.Is(err, authservice.ErrSyncAlreadyRunning):
-			h.printOutput("synchronization is working, logout and login for restart")
-			os.Exit(1)
-		default:
-			log.Debug().Err(err).Msg("failed to login")
-			handler.InternalError(
-				h.writer, fmt.Errorf("%s: %w", op, err),
-			)
-			os.Exit(1)
-		}
+		h.handleCredentialsErr(err)
+		handleSyncRunningErr(err, h.w)
+		handler.HandleUnexpectedErr(err, log, h.w)
 	}
 
 	h.printOutput("synchronization started")
 }
 
+func (h *SigninHandler) handleCredentialsErr(err error) {
+	if !errors.Is(err, authservice.ErrCredentials) {
+		return
+	}
+	h.printOutput("invalid login or password")
+	os.Exit(1)
+}
+
 func (h *SigninHandler) printOutput(formated string, args ...any) {
-	fmt.Fprintf(h.writer, formated, args...)
-	fmt.Fprintln(h.writer)
+	fmt.Fprintf(h.w, formated, args...)
+	fmt.Fprintln(h.w)
 }
 
 type LogoutHandler struct {
-	logger  logger.Logger
-	service SyncCloser
-	writer  io.Writer
+	l logger.Logger
+	s SyncCloser
+	w io.Writer
 }
 
 func NewLogout(l logger.Logger, s SyncCloser, w io.Writer) *LogoutHandler {
 	return &LogoutHandler{l, s, w}
 }
 
-func (h *LogoutHandler) Handle(ctx context.Context, v command.ValueGetter) {
+func (h *LogoutHandler) Handle(ctx context.Context) {
 	const op = "LogoutHandler.Handle"
-	log := h.logger.WithOp(op)
 
-	err := h.service.CloseSynchronization(ctx)
+	log := h.l.WithOp(op)
+
+	err := h.s.CloseSynchronization(ctx)
 	if err != nil {
-		if errors.Is(err, syncservice.ErrNoSync) {
-			h.printOutput("synchronization is not running")
-			os.Exit(1)
-		}
-		log.Debug().Err(err).Msg("failed to close synchronization")
-		handler.InternalError(h.writer, fmt.Errorf("%s: %w", op, err))
-		os.Exit(1)
+		h.handleNoSyncErr(err)
+		handler.HandleUnexpectedErr(err, log, h.w)
 	}
 
 	h.printOutput("synchronization stopped")
 }
 
-func (h *LogoutHandler) printOutput(formated string, args ...any) {
-	fmt.Fprintf(h.writer, formated, args...)
-	fmt.Fprintln(h.writer)
+func (h *LogoutHandler) handleNoSyncErr(err error) {
+	if !errors.Is(err, syncservice.ErrNoSync) {
+		return
+	}
+	h.printOutput("synchronization is not running")
+	os.Exit(1)
 }
 
-func getAuthFlags(v command.ValueGetter) (l, p string, err error) {
-	var errs []error
-	l, err = v.GetString(synccommand.LoginFlag)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("--%s", synccommand.LoginFlag))
+func (h *LogoutHandler) printOutput(formated string, args ...any) {
+	fmt.Fprintf(h.w, formated, args...)
+	fmt.Fprintln(h.w)
+}
+
+func handleSyncRunningErr(err error, w io.Writer) {
+	if !errors.Is(err, authservice.ErrSyncAlreadyRunning) {
+		return
 	}
 
-	p, err = v.GetString(synccommand.PasswordFlag)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("--%s", synccommand.PasswordFlag))
-	}
+	fmt.Fprintln(w, "synchronization is working, logout and login for restart")
+	os.Exit(1)
 
-	err = handler.RequiredFlagsErr(errs)
-	return
 }

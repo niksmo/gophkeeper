@@ -1,4 +1,4 @@
-package readservice_test
+package genservice_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service"
-	"github.com/niksmo/gophkeeper/internal/client/service/readservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/genservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -49,33 +49,33 @@ func (d *decrypter) Decrypt(data []byte) ([]byte, error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-type repo struct {
+type MockReaderByID struct {
 	mock.Mock
 }
 
-func (r *repo) ReadByID(ctx context.Context, id int) ([]byte, error) {
+func (r *MockReaderByID) ReadByID(ctx context.Context, id int) ([]byte, error) {
 	args := r.Called(ctx, id)
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-type suite struct {
+type ReadSuite struct {
 	t         *testing.T
 	ctx       context.Context
 	log       logger.Logger
-	repo      *repo
+	repo      *MockReaderByID
 	decoder   *decoder
 	decrypter *decrypter
-	service   *readservice.ReadService[dto]
+	service   *genservice.ReadService[dto]
 }
 
-func newSuite(t *testing.T) *suite {
+func newReadSuite(t *testing.T) *ReadSuite {
 	ctx := context.Background()
 	log := logger.NewPretty("debug")
 	decoder := &decoder{}
 	decrypter := &decrypter{}
-	repo := &repo{}
-	service := readservice.New[dto](log, repo, decoder, decrypter)
-	return &suite{
+	repo := &MockReaderByID{}
+	service := genservice.NewRead[dto](log, repo, decoder, decrypter)
+	return &ReadSuite{
 		t, ctx, log,
 		repo,
 		decoder,
@@ -84,7 +84,7 @@ func newSuite(t *testing.T) *suite {
 	}
 }
 
-func (st *suite) PrettyPanic() {
+func (st *ReadSuite) PrettyPanic() {
 	st.t.Helper()
 	if r := recover(); r != nil {
 		st.t.Log(r)
@@ -105,7 +105,7 @@ func TestRead(t *testing.T) {
 	encodedData := []byte("encodedData")
 	var obj dto
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t)
+		st := newReadSuite(t)
 		defer st.PrettyPanic()
 
 		expectedObj := dto{
@@ -124,7 +124,7 @@ func TestRead(t *testing.T) {
 	})
 
 	t.Run("NotExists", func(t *testing.T) {
-		st := newSuite(t)
+		st := newReadSuite(t)
 		defer st.PrettyPanic()
 
 		expectedObj := dto{}
@@ -143,7 +143,7 @@ func TestRead(t *testing.T) {
 	})
 
 	t.Run("RepoReadFailed", func(t *testing.T) {
-		st := newSuite(t)
+		st := newReadSuite(t)
 		defer st.PrettyPanic()
 
 		repoErr := errors.New("something happened with repo")
@@ -160,7 +160,7 @@ func TestRead(t *testing.T) {
 	})
 
 	t.Run("DecryptFailedInvalidKey", func(t *testing.T) {
-		st := newSuite(t)
+		st := newReadSuite(t)
 		defer st.PrettyPanic()
 
 		expectedObj := dto{}
@@ -180,7 +180,7 @@ func TestRead(t *testing.T) {
 	})
 
 	t.Run("DecodeFailed", func(t *testing.T) {
-		st := newSuite(t)
+		st := newReadSuite(t)
 		defer st.PrettyPanic()
 
 		decodeErr := errors.New("failed to decode")

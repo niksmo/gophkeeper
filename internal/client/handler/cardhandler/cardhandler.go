@@ -1,258 +1,139 @@
 package cardhandler
 
 import (
+	"context"
 	"fmt"
 	"io"
 
-	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/cardcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
-const handlerName = "bank card"
+const entity = "bank card"
 
-type AddFlags struct {
-	Key string
-	dto.BankCard
+type AddCmdHandler struct {
+	l logger.Logger
+	s handler.AddService[dto.BankCard]
+	w io.Writer
 }
 
 func NewAdd(
 	l logger.Logger, s handler.AddService[dto.BankCard], w io.Writer,
-) *handler.AddHandler[AddFlags, dto.BankCard] {
-	h := &handler.AddHandler[AddFlags, dto.BankCard]{
-		Log:     l,
-		Service: s,
-		Writer:  w,
-		Name:    handlerName,
-	}
-
-	h.GetFlagsHook = func(v command.ValueGetter) (AddFlags, error) {
-		var errs []error
-		key, err := handler.GetMasterKeyValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		name, err := handler.GetNameValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		cardNum, err := getCardNumberValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		expDate, err := getExpDateValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		holderName, err := getHolderNameValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		err = handler.RequiredFlagsErr(errs)
-
-		dto := dto.BankCard{
-			Name:       name,
-			Number:     cardNum,
-			ExpDate:    expDate,
-			HolderName: holderName,
-		}
-
-		return AddFlags{key, dto}, err
-	}
-
-	h.GetServiceArgsHook = func(
-		f AddFlags,
-	) (key string, name string, dto dto.BankCard) {
-		return f.Key, f.Name, f.BankCard
-	}
-
-	return h
+) *AddCmdHandler {
+	return &AddCmdHandler{l, s, w}
 }
 
-type ReadFlags struct {
-	Key      string
-	EntryNum int
+func (h *AddCmdHandler) Handle(
+	ctx context.Context, fv cardcommand.AddCmdFlags,
+) {
+	const op = "cardhandlerAdd.Handle"
+
+	log := h.l.WithOp(op)
+
+	o := dto.BankCard{
+		Name:       fv.Name,
+		Number:     fv.CardNum,
+		ExpDate:    fv.Exp,
+		HolderName: fv.Holder,
+	}
+	entryNum, err := h.s.Add(ctx, fv.Key, fv.Name, o)
+	if err != nil {
+		handler.HandleAlreadyExistsErr(err, log, h.w, entity, fv.Name)
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+
+	handler.PrintSaveEntryOutput(h.w, entity, entryNum)
 }
 
-func NewRead(
-	l logger.Logger, s handler.ReadService[dto.BankCard], w io.Writer,
-) *handler.ReadHandler[ReadFlags, dto.BankCard] {
-	h := &handler.ReadHandler[ReadFlags, dto.BankCard]{
-		Log:     l,
-		Service: s,
-		Writer:  w,
-		Name:    handlerName,
-	}
-
-	h.GetFlagsHook = func(v command.ValueGetter) (ReadFlags, error) {
-		var errs []error
-		key, err := handler.GetMasterKeyValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		entryNum, err := handler.GetEnryNumValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		err = handler.RequiredFlagsErr(errs)
-		return ReadFlags{key, entryNum}, err
-	}
-
-	h.GetServiceArgsHook = func(f ReadFlags) (key string, entryNum int) {
-		return f.Key, f.EntryNum
-	}
-
-	h.GetOutputHook = func(_ ReadFlags, entryNum int, dto dto.BankCard) string {
-		return fmt.Sprintf(
-			"the bank card with entry %d: name=%q number=%q exp=%q holder=%q\n",
-			entryNum, dto.Name, dto.Number, dto.ExpDate, dto.HolderName,
-		)
-	}
-
-	return h
-}
-
-func NewList(
-	l logger.Logger, s handler.ListService, w io.Writer,
-) *handler.ListHandler {
-	return &handler.ListHandler{
-		Log:        l,
-		Service:    s,
-		Writer:     w,
-		Name:       handlerName,
-		NamePlural: "bank cards",
-	}
-}
-
-type EditFlags struct {
-	Key      string
-	EntryNum int
-	dto.BankCard
+type EditCmdHandler struct {
+	l logger.Logger
+	s handler.EditService[dto.BankCard]
+	w io.Writer
 }
 
 func NewEdit(
 	l logger.Logger, s handler.EditService[dto.BankCard], w io.Writer,
-) *handler.EditHandler[EditFlags, dto.BankCard] {
-	h := &handler.EditHandler[EditFlags, dto.BankCard]{
-		Log:     l,
-		Service: s,
-		Writer:  w,
-		Name:    handlerName,
-	}
-
-	h.GetFlagsHook = func(v command.ValueGetter) (EditFlags, error) {
-		var errs []error
-		key, err := handler.GetMasterKeyValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		entryNum, err := handler.GetEnryNumValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		name, err := handler.GetNameValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		cardNum, err := getCardNumberValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		expDate, err := getExpDateValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		holderName, err := getHolderNameValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		err = handler.RequiredFlagsErr(errs)
-
-		dto := dto.BankCard{
-			Name:       name,
-			Number:     cardNum,
-			ExpDate:    expDate,
-			HolderName: holderName,
-		}
-
-		return EditFlags{key, entryNum, dto}, err
-	}
-
-	h.GetServiceArgsHook = func(
-		f EditFlags,
-	) (key string, entryNum int, name string, dto dto.BankCard) {
-		return f.Key, f.EntryNum, f.Name, f.BankCard
-	}
-
-	return h
+) *EditCmdHandler {
+	return &EditCmdHandler{l, s, w}
 }
 
-type RemoveFlags struct {
-	EntryNum int
+func (h *EditCmdHandler) Handle(
+	ctx context.Context, fv cardcommand.EditCmdFlags,
+) {
+	const op = "cardhandlerEdit.Handle"
+
+	log := h.l.WithOp(op)
+
+	o := dto.BankCard{
+		Name:       fv.Name,
+		Number:     fv.CardNum,
+		ExpDate:    fv.Exp,
+		HolderName: fv.Holder,
+	}
+	err := h.s.Edit(ctx, fv.Key, fv.EntryNum, fv.Name, o)
+	if err != nil {
+		handler.HandleAlreadyExistsErr(err, log, h.w, entity, fv.Name)
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+
+	handler.PrintSaveEntryOutput(h.w, entity, fv.EntryNum)
+}
+
+type ReadCmdHandler struct {
+	l logger.Logger
+	s handler.ReadService[dto.BankCard]
+	w io.Writer
+}
+
+func NewRead(
+	l logger.Logger, s handler.ReadService[dto.BankCard], w io.Writer,
+) *ReadCmdHandler {
+	return &ReadCmdHandler{l, s, w}
+}
+
+func (h *ReadCmdHandler) Handle(
+	ctx context.Context, key string, entryNum int,
+) {
+	const op = "cardhandlerRead.Handle"
+
+	log := h.l.WithOp(op)
+
+	obj, err := h.s.Read(ctx, key, entryNum)
+	if err != nil {
+		handler.HandleInvalidKeyErr(err, log, h.w)
+		handler.HandleNotExistsErr(err, log, h.w, entity, entryNum)
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+	h.printOutput(entryNum, obj)
+}
+
+func (h *ReadCmdHandler) printOutput(entryNum int, o dto.BankCard) {
+	fmt.Fprintf(h.w,
+		"the bank card with entry %d: name=%q number=%q exp=%q holder=%q\n",
+		entryNum, o.Name, o.Number, o.ExpDate, o.HolderName)
+}
+
+func NewList(
+	l logger.Logger, s handler.ListService, w io.Writer,
+) *handler.ListCmdHandler {
+	return &handler.ListCmdHandler{
+		Log:        l,
+		Service:    s,
+		Writer:     w,
+		Name:       entity,
+		NamePlural: entity + "s",
+	}
 }
 
 func NewRemove(
 	l logger.Logger, s handler.RemoveService, w io.Writer,
-) *handler.RemoveHandler[RemoveFlags] {
-	h := &handler.RemoveHandler[RemoveFlags]{
+) *handler.RemoveCmdHandler {
+	return &handler.RemoveCmdHandler{
 		Log:     l,
 		Service: s,
 		Writer:  w,
-		Name:    handlerName,
+		Name:    entity,
 	}
-	h.GetFlagsHook = func(v command.ValueGetter) (RemoveFlags, error) {
-		var errs []error
-		entryNum, err := handler.GetEnryNumValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		err = handler.RequiredFlagsErr(errs)
-		return RemoveFlags{entryNum}, err
-	}
-
-	h.GetServiceArgsHook = func(f RemoveFlags) (entryNum int) {
-		return f.EntryNum
-	}
-
-	return h
-}
-
-func getCardNumberValue(v command.ValueGetter) (string, error) {
-	cardNum, err := v.GetString(cardcommand.CardNumFlag)
-	if err != nil || handler.IsZeroStr(cardNum) {
-		return "", fmt.Errorf("--%s", cardcommand.CardNumFlag)
-	}
-	return cardNum, nil
-}
-
-func getExpDateValue(v command.ValueGetter) (string, error) {
-	expDate, err := v.GetString(cardcommand.ExpDateFlag)
-	if err != nil || handler.IsZeroStr(expDate) {
-		return "", fmt.Errorf("--%s", cardcommand.ExpDateFlag)
-	}
-	return expDate, nil
-}
-
-func getHolderNameValue(v command.ValueGetter) (string, error) {
-	holderName, err := v.GetString(cardcommand.HolderNameFlag)
-	if err != nil || handler.IsZeroStr(holderName) {
-		return "", fmt.Errorf("--%s", cardcommand.HolderNameFlag)
-	}
-	return holderName, nil
 }

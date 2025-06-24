@@ -1,4 +1,4 @@
-package removeservice_test
+package genservice_test
 
 import (
 	"context"
@@ -7,42 +7,42 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/repository"
 	"github.com/niksmo/gophkeeper/internal/client/service"
-	"github.com/niksmo/gophkeeper/internal/client/service/removeservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/genservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type repo struct {
+type MockDeleter struct {
 	mock.Mock
 }
 
-func (r *repo) Delete(ctx context.Context, id int) error {
+func (r *MockDeleter) Delete(ctx context.Context, id int) error {
 	args := r.Called(ctx, id)
 	return args.Error(0)
 }
 
-type suite struct {
+type RemoveSuite struct {
 	t       *testing.T
 	ctx     context.Context
 	log     logger.Logger
-	repo    *repo
-	service *removeservice.RemoveService
+	repo    *MockDeleter
+	service *genservice.RemoveService
 }
 
-func newSuite(t *testing.T) *suite {
+func newRemoveSuite(t *testing.T) *RemoveSuite {
 	ctx := context.Background()
 	log := logger.NewPretty("debug")
-	repo := &repo{}
-	service := removeservice.New(log, repo)
-	return &suite{
+	repo := &MockDeleter{}
+	service := genservice.NewRemove(log, repo)
+	return &RemoveSuite{
 		t, ctx, log,
 		repo,
 		service,
 	}
 }
 
-func (st *suite) PrettyPanic() {
+func (st *RemoveSuite) PrettyPanic() {
 	st.t.Helper()
 	if r := recover(); r != nil {
 		st.t.Log(r)
@@ -54,7 +54,7 @@ func TestRemove(t *testing.T) {
 	const Delete = "Delete"
 	id := 1
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t)
+		st := newRemoveSuite(t)
 		defer st.PrettyPanic()
 
 		st.repo.On(Delete, st.ctx, id).Return(nil)
@@ -63,7 +63,7 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("NotExists", func(t *testing.T) {
-		st := newSuite(t)
+		st := newRemoveSuite(t)
 		defer st.PrettyPanic()
 
 		st.repo.On(Delete, st.ctx, id).Return(repository.ErrNotExists)
@@ -72,7 +72,7 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("RepoRemoveFailed", func(t *testing.T) {
-		st := newSuite(t)
+		st := newRemoveSuite(t)
 		defer st.PrettyPanic()
 
 		repoErr := errors.New("something happened with repo")

@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	MasterKeyFlag = "master-key"
-	NameFlag      = "name"
-	EntryNumFlag  = "entry"
+	SecreKeyFlag = "key"
+	NameFlag     = "name"
+	EntryNumFlag = "entry"
 
-	MasterKeyShorthand = "k"
-	MasterKeyDefault   = ""
-	MasterKeyUsage     = "key for encrypting, decrypting" +
+	SecretKeyShorthand = "k"
+	SecretKeyDefault   = ""
+	SecretKeyUsage     = "key for encrypting, decrypting" +
 		" and accessing to stored data (required)"
 
 	NameShorthand = "n"
@@ -25,21 +25,20 @@ const (
 )
 
 type (
-	IntGetter interface {
-		GetInt(name string) (int, error)
+	GenCmdHandler[F any] interface {
+		Handle(context.Context, F)
 	}
 
-	StringGetter interface {
-		GetString(name string) (string, error)
+	ReadCmdHandler interface {
+		Handle(ctx context.Context, masterKey string, entryNum int)
 	}
 
-	ValueGetter interface {
-		StringGetter
-		IntGetter
+	NoFlagsCmdHandler interface {
+		Handle(context.Context)
 	}
 
-	Handler interface {
-		Handle(context.Context, ValueGetter)
+	RemoveCmdHandler interface {
+		Handle(ctx context.Context, entryNum int)
 	}
 
 	Command struct {

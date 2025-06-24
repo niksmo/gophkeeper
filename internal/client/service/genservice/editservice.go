@@ -1,4 +1,4 @@
-package editservice
+package genservice
 
 import (
 	"context"
@@ -11,15 +11,6 @@ import (
 )
 
 type (
-	encoder interface {
-		Encode(src any) ([]byte, error)
-	}
-
-	encrypter interface {
-		SetKey(string)
-		Encrypt([]byte) []byte
-	}
-
 	updateRepo interface {
 		Update(ctx context.Context, id int, name string, data []byte) error
 	}
@@ -32,7 +23,7 @@ type EditService[T any] struct {
 	encrypter encrypter
 }
 
-func New[T any](
+func NewEdit[T any](
 	logger logger.Logger,
 	repository updateRepo,
 	encoder encoder,

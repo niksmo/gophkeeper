@@ -1,4 +1,4 @@
-package addservice
+package genservice
 
 import (
 	"context"
@@ -11,15 +11,6 @@ import (
 )
 
 type (
-	encoder interface {
-		Encode(src any) ([]byte, error)
-	}
-
-	encrypter interface {
-		SetKey(string)
-		Encrypt([]byte) []byte
-	}
-
 	addRepo interface {
 		Create(ctx context.Context, name string, data []byte) (int, error)
 	}
@@ -32,7 +23,7 @@ type AddService[T any] struct {
 	encrypter encrypter
 }
 
-func New[T any](
+func NewAdd[T any](
 	logger logger.Logger,
 	repository addRepo,
 	encoder encoder,

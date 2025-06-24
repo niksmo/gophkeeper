@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	MasterKeyFlag = command.MasterKeyFlag
+	SecretKeyFlag = command.SecreKeyFlag
 	NameFlag      = command.NameFlag
 	EntryNumFlag  = command.EntryNumFlag
 	PasswordFlag  = "password"
@@ -14,9 +14,9 @@ const (
 )
 
 const (
-	masterKeyShorthand = command.MasterKeyShorthand
-	masterKeyDefault   = command.MasterKeyDefault
-	masterKeyUsage     = command.MasterKeyUsage
+	secretKeyShorthand = command.SecretKeyShorthand
+	secretKeyDefault   = command.SecretKeyDefault
+	secretKeyUsage     = command.SecretKeyUsage
 
 	nameShorthand = command.NameShorthand
 	nameDefault   = command.NameDefault
@@ -43,92 +43,72 @@ func New() *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewAdd(h command.Handler) *command.Command {
+type AddCmdFlags struct {
+	Key, Name, Login, Password string
+}
+
+func NewAdd(h command.GenCmdHandler[AddCmdFlags]) *command.Command {
+	var fv AddCmdFlags
+
 	c := &cobra.Command{
 		Use: "add",
 		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
+			h.Handle(cmd.Context(), fv)
 		},
 	}
 	flagSet := c.Flags()
 
-	flagSet.StringP(
-		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
-	)
+	flagSet.StringVarP(&fv.Key,
+		SecretKeyFlag, secretKeyShorthand, secretKeyDefault, secretKeyUsage)
 
-	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
+	flagSet.StringVarP(&fv.Name,
+		NameFlag, nameShorthand, nameDefault, nameUsage)
 
-	flagSet.StringP(
+	flagSet.StringVarP(&fv.Password,
 		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage,
 	)
 
-	flagSet.StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+	flagSet.StringVarP(&fv.Login,
+		LoginFlag, loginShorthand, loginDefault, loginUsage)
 
-	c.MarkFlagRequired(MasterKeyFlag)
+	c.MarkFlagRequired(SecretKeyFlag)
 	c.MarkFlagRequired(NameFlag)
 	c.MarkFlagRequired(PasswordFlag)
 	return &command.Command{Command: c}
 }
 
-func NewRead(h command.Handler) *command.Command {
-	c := &cobra.Command{
-		Use: "read",
-		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
-		},
-	}
-	flagSet := c.Flags()
-
-	flagSet.StringP(
-		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
-	)
-
-	flagSet.IntP(
-		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
-	)
-
-	c.MarkFlagRequired(MasterKeyFlag)
-	c.MarkFlagRequired(EntryNumFlag)
-
-	return &command.Command{Command: c}
+type EditCmdFlags struct {
+	Key, Name, Login, Password string
+	EntryNum                   int
 }
 
-func NewList(h command.Handler) *command.Command {
-	c := &cobra.Command{
-		Use: "list",
-		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
-		},
-	}
-	return &command.Command{Command: c}
-}
+func NewEdit(h command.GenCmdHandler[EditCmdFlags]) *command.Command {
+	var fv EditCmdFlags
 
-func NewEdit(h command.Handler) *command.Command {
 	c := &cobra.Command{
 		Use: "edit",
 		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
+			h.Handle(cmd.Context(), fv)
 		},
 	}
 	flagSet := c.Flags()
 
-	flagSet.StringP(
-		MasterKeyFlag, masterKeyShorthand, masterKeyDefault, masterKeyUsage,
-	)
+	flagSet.StringVarP(&fv.Key,
+		SecretKeyFlag, secretKeyShorthand, secretKeyDefault, secretKeyUsage)
 
-	flagSet.StringP(NameFlag, nameShorthand, nameDefault, nameUsage)
+	flagSet.StringVarP(&fv.Name,
+		NameFlag, nameShorthand, nameDefault, nameUsage)
 
-	flagSet.StringP(
-		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage,
-	)
+	flagSet.StringVarP(&fv.Password,
+		PasswordFlag, passwordShorthand, passwordDefault, passwordUsage)
 
-	flagSet.IntP(
-		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
-	)
+	flagSet.StringVarP(&fv.Login,
+		LoginFlag, loginShorthand, loginDefault, loginUsage)
 
-	flagSet.StringP(LoginFlag, loginShorthand, loginDefault, loginUsage)
+	flagSet.IntVarP(&fv.EntryNum,
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
 
-	c.MarkFlagRequired(MasterKeyFlag)
+	c.MarkFlagRequired(SecretKeyFlag)
 	c.MarkFlagRequired(NameFlag)
 	c.MarkFlagRequired(EntryNumFlag)
 	c.MarkFlagRequired(PasswordFlag)
@@ -136,16 +116,54 @@ func NewEdit(h command.Handler) *command.Command {
 	return &command.Command{Command: c}
 }
 
-func NewRemove(h command.Handler) *command.Command {
+func NewRead(h command.ReadCmdHandler) *command.Command {
+	var (
+		key      string
+		entryNum int
+	)
+
+	c := &cobra.Command{
+		Use: "read",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context(), key, entryNum)
+		},
+	}
+	flagSet := c.Flags()
+
+	flagSet.StringVarP(&key,
+		SecretKeyFlag, secretKeyShorthand, secretKeyDefault, secretKeyUsage)
+
+	flagSet.IntVarP(&entryNum,
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
+
+	c.MarkFlagRequired(SecretKeyFlag)
+	c.MarkFlagRequired(EntryNumFlag)
+
+	return &command.Command{Command: c}
+}
+
+func NewList(h command.NoFlagsCmdHandler) *command.Command {
+	c := &cobra.Command{
+		Use: "list",
+		Run: func(cmd *cobra.Command, args []string) {
+			h.Handle(cmd.Context())
+		},
+	}
+	return &command.Command{Command: c}
+}
+
+func NewRemove(h command.RemoveCmdHandler) *command.Command {
+	var entryNum int
+
 	c := &cobra.Command{
 		Use: "remove",
 		Run: func(cmd *cobra.Command, args []string) {
-			h.Handle(cmd.Context(), cmd.Flags())
+			h.Handle(cmd.Context(), entryNum)
 		},
 	}
-	c.Flags().IntP(
-		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage,
-	)
+	c.Flags().IntVarP(&entryNum,
+		EntryNumFlag, entryNumShorthand, entryNumDefault, entryNumUsage)
 	c.MarkFlagRequired(EntryNumFlag)
+
 	return &command.Command{Command: c}
 }

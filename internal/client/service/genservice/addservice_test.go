@@ -1,67 +1,46 @@
-package editservice_test
+package genservice_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/genservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-type encoder struct {
+type MockCreater struct {
 	mock.Mock
 }
 
-func (e *encoder) Encode(src any) ([]byte, error) {
-	args := e.Called(src)
-	return args.Get(0).([]byte), args.Error(1)
+func (r *MockCreater) Create(
+	ctx context.Context, name string, data []byte,
+) (int, error) {
+	args := r.Called(ctx, name, data)
+	return args.Int(0), args.Error(1)
 }
 
-type encrypter struct {
-	mock.Mock
-}
-
-func (e *encrypter) SetKey(k string) {
-	e.Called(k)
-}
-
-func (e *encrypter) Encrypt(data []byte) []byte {
-	args := e.Called(data)
-	return args.Get(0).([]byte)
-}
-
-type repo struct {
-	mock.Mock
-}
-
-func (r *repo) Update(
-	ctx context.Context, entryNum int, name string, data []byte,
-) error {
-	args := r.Called(ctx, entryNum, name, data)
-	return args.Error(0)
-}
-
-type suite struct {
+type AddSuite struct {
 	t         *testing.T
 	ctx       context.Context
 	log       logger.Logger
-	repo      *repo
+	repo      *MockCreater
 	encoder   *encoder
 	encrypter *encrypter
-	service   *editservice.EditService[any]
+	service   *genservice.AddService[any]
 }
 
-func newSuite(t *testing.T) *suite {
+func newAddSuiteAdd(t *testing.T) *AddSuite {
 	ctx := context.Background()
 	log := logger.NewPretty("debug")
 	encoder := &encoder{}
 	encrypter := &encrypter{}
-	repo := &repo{}
-	service := editservice.New[any](log, repo, encoder, encrypter)
-	st := &suite{
+	repo := &MockCreater{}
+	service := genservice.NewAdd[any](log, repo, encoder, encrypter)
+	st := &AddSuite{
 		t, ctx, log,
 		repo,
 		encoder,
@@ -71,7 +50,7 @@ func newSuite(t *testing.T) *suite {
 	return st
 }
 
-func (st *suite) PrettyPanic() {
+func (st *AddSuite) PrettyPanic() {
 	st.t.Helper()
 	if r := recover(); r != nil {
 		st.t.Log(r)
@@ -79,15 +58,16 @@ func (st *suite) PrettyPanic() {
 	}
 }
 
-func TestEditService(t *testing.T) {
+func TestAddService(t *testing.T) {
 	const (
-		Update  = "Update"
+		Add     = "Add"
+		Create  = "Create"
 		Encode  = "Encode"
 		SetKey  = "SetKey"
 		Encrypt = "Encrypt"
 	)
+
 	key := "testMasterKey"
-	entryNum := 1
 	obj := struct{ Name string }{
 		Name: "testName",
 	}
@@ -95,56 +75,62 @@ func TestEditService(t *testing.T) {
 	encryptedData := []byte("encryptedData")
 
 	t.Run("Ordinary", func(t *testing.T) {
-		st := newSuite(t)
+		st := newAddSuiteAdd(t)
 		defer st.PrettyPanic()
 
 		var encodeErr error
 		var repoAddErr error
+		expected := 1
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Update, st.ctx, entryNum, obj.Name, encryptedData,
-		).Return(repoAddErr)
+			Create, st.ctx, obj.Name, encryptedData,
+		).Return(expected, repoAddErr)
 
-		err := st.service.Edit(st.ctx, key, entryNum, obj.Name, obj)
+		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
 		require.NoError(t, err)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("EncodeFailed", func(t *testing.T) {
-		st := newSuite(t)
+		st := newAddSuiteAdd(t)
 		defer st.PrettyPanic()
 
 		var repoAddErr error
 		var encodeErr = errors.New("encode failed")
+		expected := 0
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Update, st.ctx, entryNum, obj.Name, encryptedData,
-		).Return(repoAddErr)
+			Create, st.ctx, obj.Name, encryptedData,
+		).Return(expected, repoAddErr)
 
-		err := st.service.Edit(st.ctx, key, entryNum, obj.Name, obj)
+		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
 		require.ErrorIs(t, err, encodeErr)
+		assert.Equal(t, expected, actual)
 	})
 
-	t.Run("RepoUpdateFailed", func(t *testing.T) {
-		st := newSuite(t)
+	t.Run("RepoAddFailed", func(t *testing.T) {
+		st := newAddSuiteAdd(t)
 		defer st.PrettyPanic()
 
 		var encodeErr error
 		var repoAddErr = errors.New("repo add failed")
+		expected := 0
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
 		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
 		st.repo.On(
-			Update, st.ctx, entryNum, obj.Name, encryptedData,
-		).Return(repoAddErr)
+			Create, st.ctx, obj.Name, encryptedData,
+		).Return(expected, repoAddErr)
 
-		err := st.service.Edit(st.ctx, key, entryNum, obj.Name, obj)
+		actual, err := st.service.Add(st.ctx, key, obj.Name, obj)
 		require.ErrorIs(t, err, repoAddErr)
+		assert.Equal(t, expected, actual)
 	})
 }

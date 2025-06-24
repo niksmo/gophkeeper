@@ -19,12 +19,8 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/handler/synchandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/texthandler"
 	"github.com/niksmo/gophkeeper/internal/client/repository"
-	"github.com/niksmo/gophkeeper/internal/client/service/addservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/authservice"
-	"github.com/niksmo/gophkeeper/internal/client/service/editservice"
-	"github.com/niksmo/gophkeeper/internal/client/service/listservice"
-	"github.com/niksmo/gophkeeper/internal/client/service/readservice"
-	"github.com/niksmo/gophkeeper/internal/client/service/removeservice"
+	"github.com/niksmo/gophkeeper/internal/client/service/genservice"
 	"github.com/niksmo/gophkeeper/internal/client/service/syncservice"
 	"github.com/niksmo/gophkeeper/internal/client/storage"
 	"github.com/niksmo/gophkeeper/pkg/cipher"
@@ -90,23 +86,23 @@ func (a *App) registerCommands() {
 func (a *App) getPasswordCommand() *command.Command {
 	repo := repository.NewPwd(a.log, a.storage)
 
-	addS := addservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
+	addS := genservice.NewAdd[dto.PWD](a.log, repo, a.encoder, a.encrypter)
 	addH := pwdhandler.NewAdd(a.log, addS, os.Stdout)
 	addC := pwdcommand.NewAdd(addH)
 
-	readS := readservice.New[dto.PWD](a.log, repo, a.decoder, a.decrypter)
+	readS := genservice.NewRead[dto.PWD](a.log, repo, a.decoder, a.decrypter)
 	readH := pwdhandler.NewRead(a.log, readS, os.Stdout)
 	readC := pwdcommand.NewRead(readH)
 
-	listS := listservice.New(a.log, repo)
+	listS := genservice.NewList(a.log, repo)
 	listH := pwdhandler.NewList(a.log, listS, os.Stdout)
 	listC := pwdcommand.NewList(listH)
 
-	editS := editservice.New[dto.PWD](a.log, repo, a.encoder, a.encrypter)
+	editS := genservice.NewEdit[dto.PWD](a.log, repo, a.encoder, a.encrypter)
 	editH := pwdhandler.NewEdit(a.log, editS, os.Stdout)
 	editC := pwdcommand.NewEdit(editH)
 
-	removeS := removeservice.New(a.log, repo)
+	removeS := genservice.NewRemove(a.log, repo)
 	removeH := pwdhandler.NewRemove(a.log, removeS, os.Stdout)
 	removeC := pwdcommand.NewRemove(removeH)
 
@@ -118,23 +114,23 @@ func (a *App) getPasswordCommand() *command.Command {
 func (a *App) getBinaryCommand() *command.Command {
 	repo := repository.NewBin(a.log, a.storage)
 
-	addS := addservice.New[dto.BIN](a.log, repo, a.encoder, a.encrypter)
+	addS := genservice.NewAdd[dto.BIN](a.log, repo, a.encoder, a.encrypter)
 	addH := binhandler.NewAdd(a.log, addS, os.Stdout)
 	addC := bincommand.NewAdd(addH)
 
-	readS := readservice.New[dto.BIN](a.log, repo, a.decoder, a.decrypter)
+	readS := genservice.NewRead[dto.BIN](a.log, repo, a.decoder, a.decrypter)
 	readH := binhandler.NewRead(a.log, readS, os.Stdout)
 	readC := bincommand.NewRead(readH)
 
-	listS := listservice.New(a.log, repo)
+	listS := genservice.NewList(a.log, repo)
 	listH := binhandler.NewList(a.log, listS, os.Stdout)
 	listC := bincommand.NewList(listH)
 
-	editS := editservice.New[dto.BIN](a.log, repo, a.encoder, a.encrypter)
+	editS := genservice.NewEdit[dto.BIN](a.log, repo, a.encoder, a.encrypter)
 	editH := binhandler.NewEdit(a.log, editS, os.Stdout)
 	editC := bincommand.NewEdit(editH)
 
-	removeS := removeservice.New(a.log, repo)
+	removeS := genservice.NewRemove(a.log, repo)
 	removeH := binhandler.NewRemove(a.log, removeS, os.Stdout)
 	removeC := bincommand.NewRemove(removeH)
 
@@ -146,23 +142,23 @@ func (a *App) getBinaryCommand() *command.Command {
 func (a *App) getCardCommand() *command.Command {
 	repo := repository.NewCard(a.log, a.storage)
 
-	addS := addservice.New[dto.BankCard](a.log, repo, a.encoder, a.encrypter)
+	addS := genservice.NewAdd[dto.BankCard](a.log, repo, a.encoder, a.encrypter)
 	addH := cardhandler.NewAdd(a.log, addS, os.Stdout)
 	addC := cardcommand.NewAdd(addH)
 
-	readS := readservice.New[dto.BankCard](a.log, repo, a.decoder, a.decrypter)
+	readS := genservice.NewRead[dto.BankCard](a.log, repo, a.decoder, a.decrypter)
 	readH := cardhandler.NewRead(a.log, readS, os.Stdout)
 	readC := cardcommand.NewRead(readH)
 
-	listS := listservice.New(a.log, repo)
+	listS := genservice.NewList(a.log, repo)
 	listH := cardhandler.NewList(a.log, listS, os.Stdout)
 	listC := cardcommand.NewList(listH)
 
-	editS := editservice.New[dto.BankCard](a.log, repo, a.encoder, a.encrypter)
+	editS := genservice.NewEdit[dto.BankCard](a.log, repo, a.encoder, a.encrypter)
 	editH := cardhandler.NewEdit(a.log, editS, os.Stdout)
 	editC := cardcommand.NewEdit(editH)
 
-	removeS := removeservice.New(a.log, repo)
+	removeS := genservice.NewRemove(a.log, repo)
 	removeH := cardhandler.NewRemove(a.log, removeS, os.Stdout)
 	removeC := cardcommand.NewRemove(removeH)
 
@@ -174,23 +170,23 @@ func (a *App) getCardCommand() *command.Command {
 func (a *App) getTextCommand() *command.Command {
 	repo := repository.NewText(a.log, a.storage)
 
-	addS := addservice.New[dto.Text](a.log, repo, a.encoder, a.encrypter)
+	addS := genservice.NewAdd[dto.Text](a.log, repo, a.encoder, a.encrypter)
 	addH := texthandler.NewAdd(a.log, addS, os.Stdout)
 	addC := textcommand.NewAdd(addH)
 
-	readS := readservice.New[dto.Text](a.log, repo, a.decoder, a.decrypter)
+	readS := genservice.NewRead[dto.Text](a.log, repo, a.decoder, a.decrypter)
 	readH := texthandler.NewRead(a.log, readS, os.Stdout)
 	readC := textcommand.NewRead(readH)
 
-	listS := listservice.New(a.log, repo)
+	listS := genservice.NewList(a.log, repo)
 	listH := texthandler.NewList(a.log, listS, os.Stdout)
 	listC := textcommand.NewList(listH)
 
-	editS := editservice.New[dto.Text](a.log, repo, a.encoder, a.encrypter)
+	editS := genservice.NewEdit[dto.Text](a.log, repo, a.encoder, a.encrypter)
 	editH := texthandler.NewEdit(a.log, editS, os.Stdout)
 	editC := textcommand.NewEdit(editH)
 
-	removeS := removeservice.New(a.log, repo)
+	removeS := genservice.NewRemove(a.log, repo)
 	removeH := texthandler.NewRemove(a.log, removeS, os.Stdout)
 	removeC := textcommand.NewRemove(removeH)
 

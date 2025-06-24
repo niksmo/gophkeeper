@@ -1,6 +1,7 @@
 package binhandler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -8,235 +9,159 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/niksmo/gophkeeper/internal/client/command"
 	"github.com/niksmo/gophkeeper/internal/client/command/bincommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/handler"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
-const handlerName = "binary"
+const entity = "binary"
 
-type AddFlags struct {
-	Key string
-	dto.BIN
+type AddCmdHandler struct {
+	l logger.Logger
+	s handler.AddService[dto.BIN]
+	w io.Writer
 }
 
 func NewAdd(
 	l logger.Logger, s handler.AddService[dto.BIN], w io.Writer,
-) *handler.AddHandler[AddFlags, dto.BIN] {
-	h := &handler.AddHandler[AddFlags, dto.BIN]{
-		Log: l, Service: s, Writer: w, Name: handlerName,
-	}
-
-	h.GetFlagsHook = func(v command.ValueGetter) (AddFlags, error) {
-		var errs []error
-		key, err := handler.GetMasterKeyValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		name, err := handler.GetNameValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		filepath, err := getFilePathValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		err = handler.RequiredFlagsErr(errs)
-
-		if err != nil {
-			return AddFlags{}, err
-		}
-
-		dto, err := getBinDto(name, filepath)
-		if err != nil {
-			return AddFlags{}, err
-		}
-
-		return AddFlags{key, dto}, err
-	}
-
-	h.GetServiceArgsHook = func(f AddFlags) (
-		key string, name string, dto dto.BIN,
-	) {
-		return f.Key, f.Name, f.BIN
-	}
-
-	return h
+) *AddCmdHandler {
+	return &AddCmdHandler{l, s, w}
 }
 
-type ReadFlags struct {
-	Key, Filepath string
-	EntryNum      int
+func (h *AddCmdHandler) Handle(ctx context.Context, fv bincommand.AddCmdFlags) {
+	const op = "binhandlerAdd.Handle"
+
+	log := h.l.WithOp(op)
+
+	o, err := getBinDto(fv.Name, fv.Filepath)
+	if err != nil {
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+
+	entryNum, err := h.s.Add(ctx, fv.Key, fv.Name, o)
+	if err != nil {
+		handler.HandleAlreadyExistsErr(err, log, h.w, entity, fv.Name)
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+
+	handler.PrintSaveEntryOutput(h.w, entity, entryNum)
 }
 
-func NewRead(
-	l logger.Logger, s handler.ReadService[dto.BIN], w io.Writer,
-) *handler.ReadHandler[ReadFlags, dto.BIN] {
-	h := &handler.ReadHandler[ReadFlags, dto.BIN]{
-		Log:     l,
-		Service: s,
-		Writer:  w,
-		Name:    handlerName,
-	}
-
-	h.GetFlagsHook = func(v command.ValueGetter) (ReadFlags, error) {
-		var errs []error
-		key, err := handler.GetMasterKeyValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		entryNum, err := handler.GetEnryNumValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		filepath, _ := getFilePathValue(v)
-
-		err = handler.RequiredFlagsErr(errs)
-		return ReadFlags{key, filepath, entryNum}, err
-	}
-
-	h.GetServiceArgsHook = func(f ReadFlags) (key string, entryNum int) {
-		return f.Key, f.EntryNum
-	}
-
-	h.GetOutputHook = func(flags ReadFlags, entryNum int, dto dto.BIN) string {
-		var strBuilder strings.Builder
-		strBuilder.WriteString(
-			fmt.Sprintf(
-				"the binary data with entry %d: name=%q size=%d ext=%q \n",
-				entryNum, dto.Name, len(dto.Data), dto.Ext,
-			))
-
-		err := writeData(flags.Filepath, dto.Data)
-		if err != nil {
-			strBuilder.WriteString(
-				fmt.Sprintf("write file error: %s\n", err.Error()),
-			)
-		}
-
-		return strBuilder.String()
-	}
-
-	return h
-}
-
-func NewList(
-	l logger.Logger, s handler.ListService, w io.Writer,
-) *handler.ListHandler {
-	return &handler.ListHandler{
-		Log:        l,
-		Service:    s,
-		Writer:     w,
-		Name:       handlerName,
-		NamePlural: "binaries",
-	}
-}
-
-type EditFlags struct {
-	Key      string
-	EntryNum int
-	dto.BIN
+type EditCmdHandler struct {
+	l logger.Logger
+	s handler.EditService[dto.BIN]
+	w io.Writer
 }
 
 func NewEdit(
 	l logger.Logger, s handler.EditService[dto.BIN], w io.Writer,
-) *handler.EditHandler[EditFlags, dto.BIN] {
-	h := &handler.EditHandler[EditFlags, dto.BIN]{
-		Log:     l,
-		Service: s,
-		Writer:  w,
-		Name:    handlerName,
-	}
-
-	h.GetFlagsHook = func(v command.ValueGetter) (EditFlags, error) {
-		var errs []error
-		key, err := handler.GetMasterKeyValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		entryNum, err := handler.GetEnryNumValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		name, err := handler.GetNameValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		filepath, err := getFilePathValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		err = handler.RequiredFlagsErr(errs)
-
-		if err != nil {
-			return EditFlags{}, err
-		}
-
-		dto, err := getBinDto(name, filepath)
-		if err != nil {
-			return EditFlags{}, err
-		}
-
-		return EditFlags{key, entryNum, dto}, err
-	}
-
-	h.GetServiceArgsHook = func(
-		f EditFlags,
-	) (key string, entryNum int, name string, dto dto.BIN) {
-		return f.Key, f.EntryNum, f.Name, f.BIN
-	}
-
-	return h
+) *EditCmdHandler {
+	return &EditCmdHandler{l, s, w}
 }
 
-type RemoveFlags struct {
-	EntryNum int
+func (h *EditCmdHandler) Handle(
+	ctx context.Context, fv bincommand.EditCmdFlags,
+) {
+	const op = "binhandlerEdit.Handle"
+
+	log := h.l.WithOp(op)
+
+	o, err := getBinDto(fv.Name, fv.Filepath)
+	if err != nil {
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+
+	err = h.s.Edit(ctx, fv.Key, fv.EntryNum, fv.Name, o)
+	if err != nil {
+		handler.HandleAlreadyExistsErr(err, log, h.w, entity, fv.Name)
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+
+	handler.PrintSaveEntryOutput(h.w, entity, fv.EntryNum)
+}
+
+type ReadCmdHandler struct {
+	l logger.Logger
+	s handler.ReadService[dto.BIN]
+	w io.Writer
+}
+
+func NewRead(
+	l logger.Logger, s handler.ReadService[dto.BIN], w io.Writer,
+) *ReadCmdHandler {
+	return &ReadCmdHandler{l, s, w}
+}
+
+func (h *ReadCmdHandler) Handle(
+	ctx context.Context, fv bincommand.ReadCmdFlags,
+) {
+	const op = "binhandlerRead.Handle"
+
+	log := h.l.WithOp(op)
+
+	obj, err := h.s.Read(ctx, fv.Key, fv.EntryNum)
+	if err != nil {
+		handler.HandleInvalidKeyErr(err, log, h.w)
+		handler.HandleNotExistsErr(err, log, h.w, entity, fv.EntryNum)
+		handler.HandleUnexpectedErr(err, log, h.w)
+	}
+
+	output := h.buildOutput(fv.EntryNum, fv.Filepath, obj)
+	h.printOutput(output)
+}
+
+func (h *ReadCmdHandler) buildOutput(
+	entryNum int, filepath string, o dto.BIN,
+) string {
+	var b strings.Builder
+	b.WriteString(
+		fmt.Sprintf(
+			"the binary data with entry %d: name=%q size=%d ext=%q \n",
+			entryNum, o.Name, len(o.Data), o.Ext,
+		))
+
+	err := h.writeData(filepath, o.Data)
+	if err != nil {
+		b.WriteString(err.Error())
+	}
+
+	return b.String()
+}
+
+func (h *ReadCmdHandler) writeData(filepath string, data []byte) error {
+	err := writeData(filepath, data)
+	if err != nil {
+		return fmt.Errorf("write file error: %w", err)
+	}
+	return nil
+}
+
+func (h *ReadCmdHandler) printOutput(out string) {
+	fmt.Fprintln(h.w, out)
+}
+
+func NewList(
+	l logger.Logger, s handler.ListService, w io.Writer,
+) *handler.ListCmdHandler {
+	return &handler.ListCmdHandler{
+		Log:        l,
+		Service:    s,
+		Writer:     w,
+		Name:       entity,
+		NamePlural: "binaries",
+	}
 }
 
 func NewRemove(
 	l logger.Logger, s handler.RemoveService, w io.Writer,
-) *handler.RemoveHandler[RemoveFlags] {
-	h := &handler.RemoveHandler[RemoveFlags]{
+) *handler.RemoveCmdHandler {
+	return &handler.RemoveCmdHandler{
 		Log:     l,
 		Service: s,
 		Writer:  w,
-		Name:    handlerName,
+		Name:    entity,
 	}
-	h.GetFlagsHook = func(v command.ValueGetter) (RemoveFlags, error) {
-		var errs []error
-		entryNum, err := handler.GetEnryNumValue(v)
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		err = handler.RequiredFlagsErr(errs)
-		return RemoveFlags{entryNum}, err
-	}
-
-	h.GetServiceArgsHook = func(f RemoveFlags) (entryNum int) {
-		return f.EntryNum
-	}
-
-	return h
-}
-
-func getFilePathValue(v command.ValueGetter) (string, error) {
-	filepath, err := v.GetString(bincommand.FilepathFlag)
-	if err != nil || handler.IsZeroStr(filepath) {
-		return "", fmt.Errorf("--%s", command.MasterKeyFlag)
-	}
-	return filepath, nil
 }
 
 func getBinDto(name, path string) (dto.BIN, error) {
@@ -295,8 +220,5 @@ func writeData(path string, data []byte) error {
 
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return false
-	}
-	return true
+	return errors.Is(err, os.ErrNotExist)
 }

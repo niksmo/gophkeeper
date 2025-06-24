@@ -1,4 +1,4 @@
-package listservice
+package genservice
 
 import (
 	"context"
@@ -16,7 +16,7 @@ type ListService struct {
 	r listRepo
 }
 
-func New(
+func NewList(
 	logger logger.Logger,
 	repository listRepo,
 ) *ListService {

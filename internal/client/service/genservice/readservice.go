@@ -1,4 +1,4 @@
-package readservice
+package genservice
 
 import (
 	"context"
@@ -33,7 +33,7 @@ type ReadService[T any] struct {
 	dto       T
 }
 
-func New[T any](
+func NewRead[T any](
 	logger logger.Logger,
 	repository readRepo,
 	decoder decoder,

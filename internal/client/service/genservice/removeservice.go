@@ -1,4 +1,4 @@
-package removeservice
+package genservice
 
 import (
 	"context"
@@ -19,9 +19,8 @@ type RemoveService struct {
 	r deleteRepo
 }
 
-func New(
-	logger logger.Logger,
-	repository deleteRepo,
+func NewRemove(
+	logger logger.Logger, repository deleteRepo,
 ) *RemoveService {
 	return &RemoveService{
 		l: logger, r: repository,
