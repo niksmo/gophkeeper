@@ -12,6 +12,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/command/synccommand"
 	"github.com/niksmo/gophkeeper/internal/client/command/textcommand"
 	"github.com/niksmo/gophkeeper/internal/client/dto"
+	"github.com/niksmo/gophkeeper/internal/client/handler/authhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/binhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/cardhandler"
 	"github.com/niksmo/gophkeeper/internal/client/handler/pwdhandler"
@@ -33,10 +34,6 @@ import (
 	authbp "github.com/niksmo/gophkeeper/proto/auth"
 )
 
-const (
-	syncTick = 5 * time.Second
-)
-
 type App struct {
 	log        logger.Logger
 	cmd        *command.Command
@@ -46,9 +43,10 @@ type App struct {
 	encrypter  *cipher.Encrypter
 	decrypter  *cipher.Decrypter
 	serverAddr string
+	syncTick   time.Duration
 }
 
-func New(logLevel, dsn, serverAddr string) *App {
+func New(logLevel, dsn, serverAddr string, syncTick time.Duration) *App {
 	log := logger.NewPretty(logLevel)
 	app := &App{
 		log,
@@ -59,6 +57,7 @@ func New(logLevel, dsn, serverAddr string) *App {
 		cipher.NewEncrypter(),
 		cipher.NewDecrypter(),
 		serverAddr,
+		syncTick,
 	}
 	app.registerCommands()
 	return app
@@ -195,23 +194,25 @@ func (a *App) getTextCommand() *command.Command {
 
 func (a *App) getSyncCommand() *command.Command {
 	gRPCClient := grpccl.New(a.serverAddr, authbp.NewAuthClient)
-	authS := authservice.New(a.log, gRPCClient)
-
 	syncRepo := repository.NewSync(a.log, a.storage)
-	signupS := syncservice.NewSignup(a.log, syncRepo, authS)
-	signupH := synchandler.NewSignup(a.log, signupS, os.Stdout)
+
+	syncStarter := syncservice.NewSyncRunner(a.log, syncRepo)
+	userRegistrar := authservice.NewUserRegistrar(a.log, gRPCClient, syncStarter)
+	userAuthorizer := authservice.NewUserAuthorizer(a.log, gRPCClient, syncStarter)
+
+	signupH := authhandler.NewSignup(a.log, userRegistrar, os.Stdout)
 	signupC := synccommand.NewSignup(signupH)
 
-	signinS := syncservice.NewSignin(a.log, syncRepo, authS)
-	signinH := synchandler.NewSignin(a.log, signinS, os.Stdout)
+	signinH := authhandler.NewSignin(a.log, userAuthorizer, os.Stdout)
 	signinC := synccommand.NewSignin(signinH)
 
-	logoutS := syncservice.NewLogout(a.log, syncRepo)
-	logoutH := synchandler.NewLogout(a.log, logoutS, os.Stdout)
+	syncCloser := syncservice.NewSyncCloser(a.log, syncRepo)
+	logoutH := authhandler.NewLogout(a.log, syncCloser, os.Stdout)
 	logoutC := synccommand.NewLogout(logoutH)
 
-	syncHS := syncservice.New(a.log, syncRepo, syncTick)
-	startC := synccommand.NewStart(syncHS)
+	syncRunner := syncservice.NewWorkerPool(a.log, syncRepo, a.syncTick)
+	startH := synchandler.NewStart(a.log, syncRunner, os.Stdout)
+	startC := synccommand.NewStart(startH)
 
 	syncC := synccommand.New()
 	syncC.AddCommand(signupC, signinC, logoutC, startC)

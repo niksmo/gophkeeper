@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/niksmo/gophkeeper/internal/client/service"
+	"github.com/niksmo/gophkeeper/internal/client/service/syncservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	authbp "github.com/niksmo/gophkeeper/proto/auth"
 	"google.golang.org/grpc/codes"
@@ -18,6 +19,7 @@ var (
 	ErrCredentials           = errors.New("invalid credentials")
 	ErrTimeoutExpired        = errors.New("deadline exceeded")
 	ErrAuthServerUnavailable = errors.New("authorization service unavailable")
+	ErrSyncAlreadyRunning    = errors.New("synchronization is already running")
 )
 
 const (
@@ -25,6 +27,7 @@ const (
 )
 
 type (
+	// TODO: think about refactoring to more simple
 	ClientConnector interface {
 		ConnClient() (authbp.AuthClient, error)
 		Close() error
@@ -52,16 +55,12 @@ func (r *UserRegistrar) RegisterUser(
 ) error {
 	const op = "UserRegistrar.RegisterUser"
 
-	log := r.logger.WithOp(op)
-
 	token, err := r.registerUser(ctx, login, password)
 	if err != nil {
 		return r.error(op, err)
 	}
 
-	err = r.syncStarter.StartSynchronization(ctx, token)
-	if err != nil {
-		log.Debug().Err(err).Msg("failed to start synchronization")
+	if err := r.startSynchronization(ctx, token); err != nil {
 		return r.error(op, err)
 	}
 
@@ -80,7 +79,7 @@ func (r *UserRegistrar) registerUser(ctx context.Context, login, password string
 	}
 	defer r.clientConn.Close()
 
-	ctxWT, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	reqData := &authbp.RegUserRequest{
@@ -88,7 +87,7 @@ func (r *UserRegistrar) registerUser(ctx context.Context, login, password string
 		Password: []byte(password),
 	}
 
-	resData, err := authClient.RegisterUser(ctxWT, reqData)
+	resData, err := authClient.RegisterUser(ctx, reqData)
 	if err := r.handleRegistrationErr(err); err != nil {
 		return "", err
 	}
@@ -124,6 +123,14 @@ func (r *UserRegistrar) handleRegistrationErr(err error) error {
 	}
 }
 
+func (r *UserRegistrar) startSynchronization(ctx context.Context, token string) error {
+	const op = "UserRegistrar.startSynchronization"
+
+	log := r.logger.WithOp(op)
+
+	return startSynchronization(ctx, log, r.syncStarter, token)
+}
+
 func (r *UserRegistrar) error(op string, err error) error {
 	return fmt.Errorf("%s: %w", op, err)
 }
@@ -145,16 +152,12 @@ func (a *UserAuthorizer) AuthorizeUser(
 ) error {
 	const op = "AuthService.AuthorizeUser"
 
-	log := a.logger.WithOp(op)
-
 	token, err := a.authorizeUser(ctx, login, password)
 	if err != nil {
 		return a.error(op, err)
 	}
 
-	err = a.syncStarter.StartSynchronization(ctx, token)
-	if err != nil {
-		log.Debug().Err(err).Msg("failed to start synchronization")
+	if err := a.startSynchronization(ctx, token); err != nil {
 		return a.error(op, err)
 	}
 
@@ -218,6 +221,29 @@ func (a *UserAuthorizer) handleAuthorizationErr(err error) error {
 	}
 }
 
+func (r *UserAuthorizer) startSynchronization(ctx context.Context, token string) error {
+	const op = "UserAuthorizer.startSynchronization"
+
+	log := r.logger.WithOp(op)
+
+	return startSynchronization(ctx, log, r.syncStarter, token)
+}
+
 func (a *UserAuthorizer) error(op string, err error) error {
 	return fmt.Errorf("%s: %w", op, err)
+}
+
+func startSynchronization(
+	ctx context.Context, log logger.Logger, ss SyncStarter, token string,
+) error {
+	err := ss.StartSynchronization(ctx, token)
+	if err != nil {
+		if errors.Is(err, syncservice.ErrPIDConflict) {
+			log.Debug().Err(err).Msg("synchronization is already running")
+			return ErrSyncAlreadyRunning
+		}
+		log.Debug().Err(err).Msg("failed to start synchronization")
+		return err
+	}
+	return nil
 }
