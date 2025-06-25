@@ -65,6 +65,7 @@ func (h *EditCmdHandler) Handle(
 	err := h.s.Edit(ctx, fv.Key, fv.EntryNum, fv.Name, o)
 	if err != nil {
 		handler.HandleAlreadyExistsErr(err, log, h.w, entity, fv.Name)
+		handler.HandleNotExistsErr(err, log, h.w, entity, fv.EntryNum)
 		handler.HandleUnexpectedErr(err, log, h.w)
 	}
 

@@ -75,6 +75,7 @@ func (h *EditCmdHandler) Handle(
 	err = h.s.Edit(ctx, fv.Key, fv.EntryNum, fv.Name, o)
 	if err != nil {
 		handler.HandleAlreadyExistsErr(err, log, h.w, entity, fv.Name)
+		handler.HandleNotExistsErr(err, log, h.w, entity, fv.EntryNum)
 		handler.HandleUnexpectedErr(err, log, h.w)
 	}
 
@@ -121,9 +122,13 @@ func (h *ReadCmdHandler) buildOutput(
 			entryNum, o.Name, len(o.Data), o.Ext,
 		))
 
-	err := h.writeData(filepath, o.Data)
-	if err != nil {
-		b.WriteString(err.Error())
+	if h.writeToFile(filepath) {
+		err := h.writeData(filepath, o.Data)
+		if err != nil {
+			b.WriteString(err.Error() + "\n")
+		} else {
+			b.WriteString(fmt.Sprintf("saved to filepath: %s\n", filepath))
+		}
 	}
 
 	return b.String()
@@ -137,8 +142,12 @@ func (h *ReadCmdHandler) writeData(filepath string, data []byte) error {
 	return nil
 }
 
+func (h *ReadCmdHandler) writeToFile(filepath string) bool {
+	return filepath != ""
+}
+
 func (h *ReadCmdHandler) printOutput(out string) {
-	fmt.Fprintln(h.w, out)
+	fmt.Fprint(h.w, out)
 }
 
 func NewList(
@@ -220,5 +229,5 @@ func writeData(path string, data []byte) error {
 
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
-	return errors.Is(err, os.ErrNotExist)
+	return !errors.Is(err, os.ErrNotExist)
 }
