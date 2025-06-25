@@ -10,16 +10,16 @@ import (
 )
 
 const (
-	syncTick    = 5 * time.Second
+	syncTick    = 5 * time.Minute
 	authTimeout = 10 * time.Second
 )
 
 var (
-	logLevel   = "debug"
-	dsn        = ".gophkeeper.db"
-	serverAddr = "127.0.0.1:8000"
-	version    = "N/A"
-	buildDate  = "N/A"
+	LogLevel   = "debug"
+	DSN        = ".gophkeeper.db"
+	ServerAddr = "127.0.0.1:8000"
+	Version    = "N/A"
+	BuildDate  = "N/A"
 )
 
 func main() {
@@ -29,11 +29,11 @@ func main() {
 	defer stopFn()
 
 	opt := client.Opt{
-		LogLevel:    logLevel,
-		DSN:         dsn,
-		ServerAddr:  serverAddr,
-		Version:     version,
-		BuildDate:   buildDate,
+		LogLevel:    LogLevel,
+		DSN:         DSN,
+		ServerAddr:  ServerAddr,
+		Version:     Version,
+		BuildDate:   BuildDate,
 		SyncTick:    syncTick,
 		AuthTimeout: authTimeout,
 	}
