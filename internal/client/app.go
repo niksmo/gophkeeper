@@ -29,24 +29,26 @@ import (
 )
 
 type Opt struct {
-	LogLevel   string
-	DSN        string
-	ServerAddr string
-	Version    string
-	BuildDate  string
-	SyncTick   time.Duration
+	LogLevel    string
+	DSN         string
+	ServerAddr  string
+	Version     string
+	BuildDate   string
+	SyncTick    time.Duration
+	AuthTimeout time.Duration
 }
 
 type App struct {
-	log        logger.Logger
-	cmd        *command.Command
-	storage    *storage.Storage
-	encoder    *encode.Encoder
-	decoder    *encode.Decoder
-	encrypter  *cipher.Encrypter
-	decrypter  *cipher.Decrypter
-	serverAddr string
-	syncTick   time.Duration
+	log         logger.Logger
+	cmd         *command.Command
+	storage     *storage.Storage
+	encoder     *encode.Encoder
+	decoder     *encode.Decoder
+	encrypter   *cipher.Encrypter
+	decrypter   *cipher.Decrypter
+	serverAddr  string
+	syncTick    time.Duration
+	authTimeout time.Duration
 }
 
 func New(opt Opt) *App {
@@ -61,6 +63,7 @@ func New(opt Opt) *App {
 		cipher.NewDecrypter(),
 		opt.ServerAddr,
 		opt.SyncTick,
+		opt.AuthTimeout,
 	}
 	app.registerCommands()
 	return app
@@ -196,7 +199,9 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
-	authClient := authservice.NewGRPCAuthClient(a.log, a.serverAddr)
+	authClient := authservice.NewGRPCAuthClient(
+		a.log, a.serverAddr, a.authTimeout,
+	)
 	syncRepo := repository.NewSync(a.log, a.storage)
 
 	syncStarter := syncservice.NewSyncRunner(a.log, syncRepo)

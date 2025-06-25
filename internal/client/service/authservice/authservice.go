@@ -24,10 +24,6 @@ var (
 	ErrSyncAlreadyRunning    = errors.New("synchronization is already running")
 )
 
-const (
-	timeout = 5 * time.Second
-)
-
 type (
 	AuthClient interface {
 		RegisterUser(ctx context.Context, login, password string) (token string, err error)
@@ -40,18 +36,21 @@ type (
 )
 
 type gRPCAuthClient struct {
-	logger logger.Logger
-	conn   *grpc.ClientConn
-	client authbp.AuthClient
+	logger  logger.Logger
+	conn    *grpc.ClientConn
+	client  authbp.AuthClient
+	timeout time.Duration
 }
 
-func NewGRPCAuthClient(logger logger.Logger, addr string) AuthClient {
+func NewGRPCAuthClient(
+	logger logger.Logger, addr string, timeout time.Duration,
+) AuthClient {
 	dialOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
 	conn, err := grpc.NewClient(addr, dialOpt)
 	if err != nil {
 		panic(err)
 	}
-	return &gRPCAuthClient{logger, conn, authbp.NewAuthClient(conn)}
+	return &gRPCAuthClient{logger, conn, authbp.NewAuthClient(conn), timeout}
 }
 
 func (c *gRPCAuthClient) RegisterUser(
@@ -67,8 +66,8 @@ func (c *gRPCAuthClient) RegisterUser(
 	}
 
 	resData, err := c.client.RegisterUser(ctx, reqData)
-	if err := c.handleRegistrationErr(err); err != nil {
-		return "", err
+	if err != nil {
+		return "", c.handleRegistrationErr(err)
 	}
 	return resData.Token, nil
 }
@@ -86,8 +85,8 @@ func (c *gRPCAuthClient) AuthorizeUser(
 	}
 
 	resData, err := c.client.AuthorizeUser(ctx, reqData)
-	if err := c.handleAuthorizationErr(err); err != nil {
-		return "", err
+	if err != nil {
+		return "", c.handleAuthorizationErr(err)
 	}
 
 	return resData.Token, nil
@@ -96,7 +95,7 @@ func (c *gRPCAuthClient) AuthorizeUser(
 func (c *gRPCAuthClient) setTimeout(
 	ctx context.Context,
 ) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(ctx, timeout)
+	return context.WithTimeout(ctx, c.timeout)
 }
 
 func (c *gRPCAuthClient) handleRegistrationErr(err error) error {
