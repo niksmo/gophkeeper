@@ -1,0 +1,6 @@
+TCPAddr: "127.0.0.1:8000"
+LogLevel: "debug"
+DSN: ".server.db"
+HashCost: 10
+TokenSecret: "myOwesomeSecret"
+TokenTTL: 5
