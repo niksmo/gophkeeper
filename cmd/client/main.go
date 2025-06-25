@@ -27,16 +27,17 @@ func main() {
 		context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
 	)
 	defer stopFn()
-	app := client.New(
-		client.Opt{
-			LogLevel:    logLevel,
-			DSN:         dsn,
-			ServerAddr:  serverAddr,
-			Version:     version,
-			BuildDate:   buildDate,
-			SyncTick:    syncTick,
-			AuthTimeout: authTimeout,
-		},
-	)
+
+	opt := client.Opt{
+		LogLevel:    logLevel,
+		DSN:         dsn,
+		ServerAddr:  serverAddr,
+		Version:     version,
+		BuildDate:   buildDate,
+		SyncTick:    syncTick,
+		AuthTimeout: authTimeout,
+	}
+
+	app := client.New(opt)
 	app.Run(stopCtx)
 }

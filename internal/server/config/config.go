@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -23,7 +25,8 @@ func MustLoad() *Config {
 	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	c := &Config{
@@ -46,7 +49,8 @@ func initConfigPath() {
 
 	viper.BindEnv(configEnv)
 
-	pflag.StringP(configFlag, "c", "server.config", "path to config file")
+	pflag.StringP(configFlag,
+		"c", "server.config.yaml", "path to config file")
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 
@@ -61,7 +65,8 @@ func initConfigPath() {
 func mustResolveTCPAddr(addr string) *net.TCPAddr {
 	a, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
-		panic(err)
+		fmt.Printf("incorrect 'TCPAddr' config: %q\n", err.Error())
+		os.Exit(1)
 	}
 	return a
 }
