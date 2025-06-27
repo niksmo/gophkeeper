@@ -10,7 +10,7 @@ import (
 type LocalRepo interface {
 	GetComparable(context.Context) ([]dto.LocalComparable, error)
 	GetPayloadAll(context.Context) ([]dto.LocalPayload, error)
-	GetPayload(ctx context.Context, sID []int) ([]dto.LocalPayload, error)
+	GetPayloadSlice(ctx context.Context, sID []int) ([]dto.LocalPayload, error)
 	InsertPayload(ctx context.Context, data []dto.LocalPayload) error
 	UpdateSyncID(ctx context.Context, IDSyncIDPairs [][2]int) error
 }
@@ -18,13 +18,13 @@ type LocalRepo interface {
 type ServerClient interface {
 	GetComparable(context.Context) ([]dto.ServerComparable, error)
 	GetPayloadAll(context.Context) ([]dto.ServerPayload, error)
-	GetPayload(ctx context.Context, sID []int) ([]dto.ServerPayload, error)
+	GetPayloadSlice(ctx context.Context, sID []int) ([]dto.ServerPayload, error)
 	InsertPayload(ctx context.Context, data []dto.ServerPayload) error
 }
 
 type Worker struct {
 	logger  logger.Logger
-	clientR LocalRepo
+	localR  LocalRepo
 	serverR ServerClient
 }
 
