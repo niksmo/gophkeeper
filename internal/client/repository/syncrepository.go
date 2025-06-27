@@ -22,7 +22,7 @@ func NewSync(l logger.Logger, db Storage) *SyncRepository {
 
 func (r *SyncRepository) Create(
 	ctx context.Context, pid int, startedAt time.Time,
-) (dto.SyncDTO, error) {
+) (dto.Sync, error) {
 	const op = "SyncRepository.Create"
 
 	stmt := `
@@ -30,7 +30,7 @@ func (r *SyncRepository) Create(
 	VALUES (?, ?)
 	RETURNING id, pid, started_at;
 	`
-	var obj dto.SyncDTO
+	var obj dto.Sync
 	err := r.db.QueryRowContext(ctx, stmt, pid, startedAt).Scan(
 		&obj.ID, &obj.PID, &obj.StartedAt,
 	)
@@ -42,7 +42,7 @@ func (r *SyncRepository) Create(
 	return obj, nil
 }
 
-func (r *SyncRepository) ReadLast(ctx context.Context) (dto.SyncDTO, error) {
+func (r *SyncRepository) ReadLast(ctx context.Context) (dto.Sync, error) {
 	const op = "SyncRepository.ReadLast"
 
 	log := r.log.With().Str("op", op).Logger()
@@ -53,7 +53,7 @@ func (r *SyncRepository) ReadLast(ctx context.Context) (dto.SyncDTO, error) {
 	ORDER BY id DESC
 	LIMIT 1;
 	`
-	var obj dto.SyncDTO
+	var obj dto.Sync
 	err := r.db.QueryRowContext(ctx, stmt).Scan(
 		&obj.ID, &obj.PID, &obj.StartedAt, &obj.StoppedAt,
 	)
@@ -71,7 +71,7 @@ func (r *SyncRepository) ReadLast(ctx context.Context) (dto.SyncDTO, error) {
 	return obj, nil
 }
 
-func (r *SyncRepository) Update(ctx context.Context, dto dto.SyncDTO) error {
+func (r *SyncRepository) Update(ctx context.Context, dto dto.Sync) error {
 	const op = "SyncRepository.Update"
 
 	log := r.log.With().Str("op", op).Logger()

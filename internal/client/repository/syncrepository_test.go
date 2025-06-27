@@ -74,7 +74,7 @@ func TestSyncUpdate(t *testing.T) {
 	t.Run("Ordinary", func(t *testing.T) {
 		st := newSyncSuite(t)
 		stoppedTime := time.Now()
-		var obj dto.SyncDTO
+		var obj dto.Sync
 		obj.ID = 2
 		obj.PID = 12345
 		obj.StartedAt = time.Now().Add(-time.Hour)

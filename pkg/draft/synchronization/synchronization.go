@@ -48,7 +48,7 @@ type Client interface {
 	GetLtData() []LtClDTO
 	GetAllData() []ClDTO
 	GetData([]int) []ClDTO // slice of ID's
-	InsertData([]SrvDTO)   // don't forget about sync_id it SrvDTO.ID
+	InsertData([]SrvDTO)   // []SrvDTO converted to []ClDTO
 	InsertSyncID([][2]int) // pass key value pairs [ID, syncID] for set sync_id to rows
 }
 

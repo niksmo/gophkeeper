@@ -26,26 +26,47 @@ type Text struct {
 	Data string
 }
 
-type LtClientEntry struct {
-	ID        int
-	Name      string
-	UpdatedAt time.Time
-	SyncID    int
-}
-
-type ClientDTO struct {
-	ID        int
-	Name      string
-	Data      []byte
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Deleted   bool
-	SyncID    int
-}
-
-type SyncDTO struct {
+type Sync struct {
 	ID        int
 	PID       int
 	StartedAt time.Time
 	StoppedAt *time.Time
+}
+
+// * Synchronization DTO's *
+
+// Embedded
+type (
+	comparable struct {
+		ID        int
+		Name      string
+		UpdatedAt time.Time
+	}
+
+	payload struct {
+		ID        int
+		Name      string
+		Data      []byte
+		CreatedAt time.Time
+		UpdatedAt time.Time
+		Deleted   bool
+	}
+)
+
+type ServerComparable struct {
+	comparable
+}
+
+type LocalComparable struct {
+	comparable
+	SyncID int
+}
+
+type ServerPayload struct {
+	payload
+}
+
+type LocalPayload struct {
+	payload
+	SyncID int
 }

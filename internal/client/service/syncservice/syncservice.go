@@ -23,10 +23,10 @@ type (
 	SyncRepo interface {
 		Create(
 			ctx context.Context, pid int, startedAt time.Time,
-		) (dto.SyncDTO, error)
+		) (dto.Sync, error)
 
-		ReadLast(context.Context) (dto.SyncDTO, error)
-		Update(context.Context, dto.SyncDTO) error
+		ReadLast(context.Context) (dto.Sync, error)
+		Update(context.Context, dto.Sync) error
 	}
 )
 
@@ -60,7 +60,7 @@ func (s *SyncRunner) StartSynchronization(ctx context.Context, token string) err
 	return nil
 }
 
-func (s *SyncRunner) getSyncEntry(ctx context.Context) (dto.SyncDTO, error) {
+func (s *SyncRunner) getSyncEntry(ctx context.Context) (dto.Sync, error) {
 	const op = "SyncRunner.getSyncEntry"
 	log := s.logger.WithOp(op)
 
@@ -69,10 +69,10 @@ func (s *SyncRunner) getSyncEntry(ctx context.Context) (dto.SyncDTO, error) {
 		if errors.Is(err, repository.ErrNotExists) {
 			log.Debug().Msg("no sync yet")
 			stoppedAt := time.Now()
-			return dto.SyncDTO{StoppedAt: &stoppedAt}, nil
+			return dto.Sync{StoppedAt: &stoppedAt}, nil
 		}
 		log.Debug().Err(err).Msg("failed to read sync entry")
-		return dto.SyncDTO{}, err
+		return dto.Sync{}, err
 	}
 	return syncEntry, nil
 }
@@ -99,12 +99,12 @@ func (s *SyncRunner) execCommand(ctx context.Context, token string) error {
 	return nil
 }
 
-func (s *SyncRunner) syncNotStopped(syncDTO dto.SyncDTO) bool {
+func (s *SyncRunner) syncNotStopped(syncDTO dto.Sync) bool {
 	return syncDTO.StoppedAt == nil
 }
 
 func (s *SyncRunner) verifyAndFix(
-	ctx context.Context, lastSync dto.SyncDTO,
+	ctx context.Context, lastSync dto.Sync,
 ) error {
 	const op = "SyncRunner.verifyAndFix"
 
@@ -166,7 +166,7 @@ func (c *SyncCloser) CloseSynchronization(ctx context.Context) error {
 	return nil
 }
 
-func (c *SyncCloser) getSyncEntry(ctx context.Context) (dto.SyncDTO, error) {
+func (c *SyncCloser) getSyncEntry(ctx context.Context) (dto.Sync, error) {
 	const op = "SyncCloser.getSyncEntry"
 
 	log := c.logger.WithOp(op)
@@ -175,21 +175,21 @@ func (c *SyncCloser) getSyncEntry(ctx context.Context) (dto.SyncDTO, error) {
 	if err != nil {
 		if errors.Is(err, repository.ErrNotExists) {
 			log.Debug().Msg("no sync yet")
-			return dto.SyncDTO{}, ErrNoSync
+			return dto.Sync{}, ErrNoSync
 		}
 		log.Debug().Err(err).Msg("failed to read last sync entry")
-		return dto.SyncDTO{}, err
+		return dto.Sync{}, err
 	}
 
 	if c.syncStopped(syncEntry) {
 		log.Debug().Msg("no sync")
-		return dto.SyncDTO{}, ErrNoSync
+		return dto.Sync{}, ErrNoSync
 	}
 
 	return syncEntry, nil
 }
 
-func (c *SyncCloser) syncStopped(syncEntry dto.SyncDTO) bool {
+func (c *SyncCloser) syncStopped(syncEntry dto.Sync) bool {
 	return syncEntry.StoppedAt != nil
 }
 
@@ -206,7 +206,7 @@ func (c *SyncCloser) getSyncProcess(pid int) (*os.Process, bool) {
 	return p, true
 }
 
-func (c *SyncCloser) setStopped(ctx context.Context, syncEntry dto.SyncDTO) {
+func (c *SyncCloser) setStopped(ctx context.Context, syncEntry dto.Sync) {
 	const op = "SyncCloser.setStopped"
 	log := c.logger.WithOp(op)
 	tn := time.Now()
@@ -315,7 +315,7 @@ func (s *SyncWorkerPool) stop() {
 	log.Debug().Msg("synchronization stopped")
 }
 
-func (s *SyncWorkerPool) getSyncEntry(ctx context.Context) dto.SyncDTO {
+func (s *SyncWorkerPool) getSyncEntry(ctx context.Context) dto.Sync {
 	const op = "SyncWorkerPool.getSyncEntry"
 	log := s.logger.WithOp(op)
 
@@ -333,7 +333,7 @@ func (s *SyncWorkerPool) getSyncEntry(ctx context.Context) dto.SyncDTO {
 
 func (s *SyncWorkerPool) createSyncEntry(
 	ctx context.Context, startTime time.Time,
-) dto.SyncDTO {
+) dto.Sync {
 	const op = "SyncWorkerPool.createSyncEntry"
 	log := s.logger.WithOp(op)
 
@@ -345,7 +345,7 @@ func (s *SyncWorkerPool) createSyncEntry(
 }
 
 func (s *SyncWorkerPool) updateSyncEntry(
-	ctx context.Context, obj dto.SyncDTO, stopTime time.Time,
+	ctx context.Context, obj dto.Sync, stopTime time.Time,
 ) {
 	const op = "SyncWorkerPool.updateSyncEntry"
 	log := s.logger.WithOp(op)
