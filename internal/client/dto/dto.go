@@ -36,35 +36,3 @@ type (
 		StoppedAt *time.Time
 	}
 )
-
-// * Synchronization *
-
-type (
-	SyncComparable struct {
-		ID        int
-		Name      string
-		UpdatedAt time.Time
-	}
-
-	SyncPayload struct {
-		ID        int
-		Name      string
-		Data      []byte
-		CreatedAt time.Time
-		UpdatedAt time.Time
-		Deleted   bool
-	}
-
-	ServerComparable = SyncComparable
-	ServerPayload    = SyncPayload
-
-	LocalComparable struct {
-		SyncComparable
-		SyncID int
-	}
-
-	LocalPayload struct {
-		SyncPayload
-		SyncID int
-	}
-)

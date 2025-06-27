@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/niksmo/gophkeeper/internal/client/model"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
@@ -111,6 +113,7 @@ func (r *Repository) ListNames(ctx context.Context) ([][2]string, error) {
 		log.Error().Err(err).Msg("failed to select rows")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	defer rows.Close()
 
 	data := make([][2]string, 0)
 	var id int
@@ -122,6 +125,11 @@ func (r *Repository) ListNames(ctx context.Context) ([][2]string, error) {
 		}
 		item := [2]string{strconv.Itoa(id), name}
 		data = append(data, item)
+	}
+
+	if err := rows.Close(); err != nil {
+		log.Error().Err(err).Msg("failed to close rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -164,7 +172,7 @@ func (r *Repository) Update(
 	return nil
 }
 
-func (r Repository) Delete(ctx context.Context, entryNum int) error {
+func (r *Repository) Delete(ctx context.Context, entryNum int) error {
 	const op = "Repository.Delete"
 	log := r.log.With().Str("op", op).Logger()
 
@@ -186,6 +194,146 @@ func (r Repository) Delete(ctx context.Context, entryNum int) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
+}
+
+type SyncEntityRepository struct {
+	logger logger.Logger
+	db     Storage
+	table  string
+}
+
+func (r *SyncEntityRepository) GetComparable(
+	ctx context.Context,
+) ([]model.LocalComparable, error) {
+	const op = "SyncEntityRepository.GetComparable"
+	log := r.logger.WithOp(op)
+
+	stmt := fmt.Sprintf(`SELECT id, name, updated_at, sync_id FROM %s;`, r.table)
+
+	rows, err := r.db.QueryContext(ctx, stmt)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	data := make([]model.LocalComparable, 0)
+
+	for rows.Next() {
+		var m model.LocalComparable
+
+		if err := m.ScanRow(rows); err != nil {
+			log.Error().Err(err).Msg("failed to scan row")
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		data = append(data, m)
+	}
+
+	if err := rows.Close(); err != nil {
+		log.Error().Err(err).Msg("failed to close rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return data, nil
+}
+
+func (r *SyncEntityRepository) GetPayloadAll(
+	ctx context.Context,
+) ([]model.LocalPayload, error) {
+	const op = "SyncEntityRepository.GetPayloadAll"
+	log := r.logger.WithOp(op)
+
+	stmt := fmt.Sprintf(`
+		SELECT id, name, data, created_at, updated_at, deleted, sync_id
+		FROM %s;`,
+		r.table,
+	)
+
+	return r.queryPayloadSlice(ctx, log, op, stmt)
+}
+
+func (r *SyncEntityRepository) GetPayloadSlice(
+	ctx context.Context, sID []int64,
+) ([]model.LocalPayload, error) {
+	const op = "SyncEntityRepository.GetPayloadSlice"
+	log := r.logger.WithOp(op)
+
+	stmt := fmt.Sprintf(`
+		SELECT id, name, data, created_at, updated_at, deleted, sync_id
+		FROM %s
+		WHERE id IN (%s);`,
+		r.table, r.makeStrIDList(sID),
+	)
+
+	return r.queryPayloadSlice(ctx, log, op, stmt)
+}
+
+func (r *SyncEntityRepository) queryPayloadSlice(
+	ctx context.Context, log logger.Logger, op string, stmt string,
+) ([]model.LocalPayload, error) {
+	rows, err := r.db.QueryContext(ctx, stmt)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	data := make([]model.LocalPayload, 0)
+
+	for rows.Next() {
+		var m model.LocalPayload
+
+		if err := m.ScanRow(rows); err != nil {
+			log.Error().Err(err).Msg("failed to scan row")
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		data = append(data, m)
+	}
+
+	if err := rows.Close(); err != nil {
+		log.Error().Err(err).Msg("failed to close rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return data, nil
+}
+
+func (r *SyncEntityRepository) makeStrIDList(sID []int64) string {
+	var b strings.Builder
+	lastIdx := len(sID) - 1
+	for idx, id := range sID {
+		b.WriteString(strconv.FormatInt(id, 10))
+
+		if idx != lastIdx {
+			b.WriteString(", ")
+		}
+	}
+	return b.String()
+}
+
+func (r *SyncEntityRepository) InsertPayload(
+	ctx context.Context, data []model.LocalPayload,
+) error {
+	// upsert
+	const op = "SyncEntityRepository.InsertPayload"
+}
+
+func (r *SyncEntityRepository) UpdateSyncID(
+	ctx context.Context, IDSyncIDPairs [][2]int,
+) error {
+	const op = "SyncEntityRepository.UpdateSyncID"
 }
 
 func IsSQLiteEniqueErr(err error) bool {
