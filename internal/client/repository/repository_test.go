@@ -344,3 +344,19 @@ func TestDelete(t *testing.T) {
 		assert.ErrorIs(t, err, repository.ErrNotExists)
 	})
 }
+
+func newEntitySyncSuite(t *testing.T, newRepoFn repoConstructor) *suite {
+	log := logger.NewPretty("debug")
+	dsn := filepath.Join(t.TempDir(), "test.db")
+	ctx := t.Context()
+
+	t.Cleanup(func() {
+		os.Remove(dsn)
+	})
+
+	s := storage.New(log, dsn)
+	s.MustRun(ctx)
+	r := newRepoFn(log, s)
+
+	return &suite{ctx, r, s}
+}

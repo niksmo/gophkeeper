@@ -19,6 +19,13 @@ var (
 	ErrNotExists     = errors.New("not exists")
 )
 
+const (
+	passwords = "passwords"
+	cards     = "cards"
+	texts     = "texts"
+	binaries  = "binaries"
+)
+
 type Storage interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
@@ -33,19 +40,19 @@ type Repository struct {
 }
 
 func NewPwd(l logger.Logger, db Storage) *Repository {
-	return &Repository{l, db, "passwords"}
+	return &Repository{l, db, passwords}
 }
 
 func NewCard(l logger.Logger, db Storage) *Repository {
-	return &Repository{l, db, "cards"}
+	return &Repository{l, db, cards}
 }
 
 func NewText(l logger.Logger, db Storage) *Repository {
-	return &Repository{l, db, "texts"}
+	return &Repository{l, db, texts}
 }
 
 func NewBin(l logger.Logger, db Storage) *Repository {
-	return &Repository{l, db, "binaries"}
+	return &Repository{l, db, binaries}
 }
 
 func (r *Repository) Create(
@@ -198,6 +205,22 @@ type SyncEntityRepository struct {
 	table  string
 }
 
+func NewPwdSync(l logger.Logger, s Storage) *SyncEntityRepository {
+	return &SyncEntityRepository{l, s, passwords}
+}
+
+func NewCardSync(l logger.Logger, s Storage) *SyncEntityRepository {
+	return &SyncEntityRepository{l, s, cards}
+}
+
+func NewTextSync(l logger.Logger, s Storage) *SyncEntityRepository {
+	return &SyncEntityRepository{l, s, texts}
+}
+
+func NewBinSync(l logger.Logger, s Storage) *SyncEntityRepository {
+	return &SyncEntityRepository{l, s, binaries}
+}
+
 func (r *SyncEntityRepository) GetComparable(
 	ctx context.Context,
 ) ([]model.LocalComparable, error) {
@@ -237,10 +260,10 @@ func (r *SyncEntityRepository) GetComparable(
 	return data, nil
 }
 
-func (r *SyncEntityRepository) GetPayloadAll(
+func (r *SyncEntityRepository) GetAll(
 	ctx context.Context,
 ) ([]model.LocalPayload, error) {
-	const op = "SyncEntityRepository.GetPayloadAll"
+	const op = "SyncEntityRepository.GetAll"
 	log := r.logger.WithOp(op)
 
 	stmt := fmt.Sprintf(`
@@ -249,13 +272,13 @@ func (r *SyncEntityRepository) GetPayloadAll(
 		r.table,
 	)
 
-	return r.queryPayloadSlice(ctx, log, op, stmt)
+	return r.querySlice(ctx, log, op, stmt)
 }
 
-func (r *SyncEntityRepository) GetPayloadSlice(
+func (r *SyncEntityRepository) GetSliceByIDs(
 	ctx context.Context, sID []int64,
 ) ([]model.LocalPayload, error) {
-	const op = "SyncEntityRepository.GetPayloadSlice"
+	const op = "SyncEntityRepository.GetSliceByIDs"
 	log := r.logger.WithOp(op)
 
 	stmt := fmt.Sprintf(`
@@ -265,10 +288,10 @@ func (r *SyncEntityRepository) GetPayloadSlice(
 		r.table, r.makeStrIDList(sID),
 	)
 
-	return r.queryPayloadSlice(ctx, log, op, stmt)
+	return r.querySlice(ctx, log, op, stmt)
 }
 
-func (r *SyncEntityRepository) queryPayloadSlice(
+func (r *SyncEntityRepository) querySlice(
 	ctx context.Context, log logger.Logger, op string, stmt string,
 ) ([]model.LocalPayload, error) {
 	rows, err := r.db.QueryContext(ctx, stmt)
@@ -317,24 +340,16 @@ func (r *SyncEntityRepository) makeStrIDList(sID []int64) string {
 	return b.String()
 }
 
-func (r *SyncEntityRepository) InsertPayload(
-	ctx context.Context, data []model.LocalPayload,
+func (r *SyncEntityRepository) UpdateBySyncIDs(
+	ctx context.Context, data []model.SyncPayload,
 ) error {
-	const op = "SyncEntityRepository.InsertPayload"
+	const op = "SyncEntityRepository.UpdateBySyncIDs"
 	log := r.logger.WithOp(op)
 
 	q := fmt.Sprintf(`
-		INSERT INTO %s
-		  (id, name, data, created_at, updated_at, deleted, sync_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT (id, name) DO UPDATE
-		SET
-			name=excluded.name,
-			data=excluded.data, 
-			created_at=excluded.created_at, 
-			updated_at=excluded.updated_at, 
-			deleted=excluded.deleted, 
-			sync_id=excluded.sync_id;
+		UPDATE %s
+		SET name=?, data=?, created_at=?, updated_at=?, deleted=?
+		WHERE sync_id=?;
 		`,
 		r.table,
 	)
@@ -353,9 +368,56 @@ func (r *SyncEntityRepository) InsertPayload(
 	defer stmt.Close()
 
 	for i, o := range data {
-		_, execErr := stmt.ExecContext(ctx, o.ID, o.Name, o.Data,
+		_, execErr := stmt.ExecContext(ctx, o.Name, o.Data,
+			o.CreatedAt, o.UpdatedAt, o.Deleted, o.ID)
+		if execErr != nil {
+			if IsSQLiteEniqueErr(err) {
+				log.Error().Err(err).Int("index", i).Msg("unexpected name")
+				continue
+			}
+			log.Error().Err(err).Int("index", i).Msg("failed to exec upsert")
+			return tx.Rollback()
+		}
+	}
+	return tx.Commit()
+
+}
+
+func (r *SyncEntityRepository) Insert(
+	ctx context.Context, data []model.LocalPayload,
+) error {
+	const op = "SyncEntityRepository.Insert"
+	log := r.logger.WithOp(op)
+
+	q := fmt.Sprintf(`
+		INSERT INTO %s
+		  (name, data, created_at, updated_at, deleted, sync_id)
+		VALUES (?, ?, ?, ?, ?, ?);
+		`,
+		r.table,
+	)
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to begin transaction")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	stmt, err := tx.PrepareContext(ctx, q)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to prepare stmt")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+
+	for i, o := range data {
+		_, execErr := stmt.ExecContext(ctx, o.Name, o.Data,
 			o.CreatedAt, o.UpdatedAt, o.Deleted, o.SyncID)
 		if execErr != nil {
+			if IsSQLiteEniqueErr(err) {
+				log.Error().Err(err).Int("index", i).Msg("unexpected name")
+				continue
+			}
 			log.Error().Err(err).Int("index", i).Msg("failed to exec upsert")
 			return tx.Rollback()
 		}

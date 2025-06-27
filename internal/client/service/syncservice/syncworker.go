@@ -9,17 +9,19 @@ import (
 
 type LocalRepo interface {
 	GetComparable(context.Context) ([]model.LocalComparable, error)
-	GetPayloadAll(context.Context) ([]model.LocalPayload, error)
-	GetPayloadSlice(ctx context.Context, sID []int64) ([]model.LocalPayload, error)
-	InsertPayload(ctx context.Context, data []model.LocalPayload) error
+	GetAll(context.Context) ([]model.LocalPayload, error)
+	GetSliceByIDs(ctx context.Context, sID []int64) ([]model.LocalPayload, error)
+	UpdateBySyncIDs(ctx context.Context, data []model.SyncPayload) error
+	Insert(ctx context.Context, data []model.LocalPayload) error
 	UpdateSyncID(ctx context.Context, IDSyncIDPairs [][2]int64) error
 }
 
 type ServerClient interface {
 	GetComparable(context.Context) ([]model.SyncComparable, error)
-	GetPayloadAll(context.Context) ([]model.SyncPayload, error)
-	GetPayloadSlice(ctx context.Context, sID []int64) ([]model.SyncPayload, error)
-	InsertPayload(ctx context.Context, data []model.SyncPayload) error
+	GetAll(context.Context) ([]model.SyncPayload, error)
+	GetSliceByIDs(context.Context) ([]model.SyncPayload, error)
+	UpdateByIDs(ctx context.Context, data []model.SyncPayload) error
+	Insert(ctx context.Context, data []model.SyncPayload) ([]int64, error)
 }
 
 type Worker struct {
