@@ -23,6 +23,7 @@ type Storage interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
 
 type Repository struct {
@@ -127,11 +128,6 @@ func (r *Repository) ListNames(ctx context.Context) ([][2]string, error) {
 		data = append(data, item)
 	}
 
-	if err := rows.Close(); err != nil {
-		log.Error().Err(err).Msg("failed to close rows")
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
 	if err := rows.Err(); err != nil {
 		log.Error().Err(err).Msg("failed while iterate rows")
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -208,7 +204,10 @@ func (r *SyncEntityRepository) GetComparable(
 	const op = "SyncEntityRepository.GetComparable"
 	log := r.logger.WithOp(op)
 
-	stmt := fmt.Sprintf(`SELECT id, name, updated_at, sync_id FROM %s;`, r.table)
+	stmt := fmt.Sprintf(
+		"SELECT id, name, updated_at, sync_id FROM %s;",
+		r.table,
+	)
 
 	rows, err := r.db.QueryContext(ctx, stmt)
 	if err != nil {
@@ -228,11 +227,6 @@ func (r *SyncEntityRepository) GetComparable(
 		}
 
 		data = append(data, m)
-	}
-
-	if err := rows.Close(); err != nil {
-		log.Error().Err(err).Msg("failed to close rows")
-		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -326,14 +320,78 @@ func (r *SyncEntityRepository) makeStrIDList(sID []int64) string {
 func (r *SyncEntityRepository) InsertPayload(
 	ctx context.Context, data []model.LocalPayload,
 ) error {
-	// upsert
 	const op = "SyncEntityRepository.InsertPayload"
+	log := r.logger.WithOp(op)
+
+	q := fmt.Sprintf(`
+		INSERT INTO %s
+		  (id, name, data, created_at, updated_at, deleted, sync_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (id, name) DO UPDATE
+		SET
+			name=excluded.name,
+			data=excluded.data, 
+			created_at=excluded.created_at, 
+			updated_at=excluded.updated_at, 
+			deleted=excluded.deleted, 
+			sync_id=excluded.sync_id;
+		`,
+		r.table,
+	)
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to begin transaction")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	stmt, err := tx.PrepareContext(ctx, q)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to prepare stmt")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+
+	for i, o := range data {
+		_, execErr := stmt.ExecContext(ctx, o.ID, o.Name, o.Data,
+			o.CreatedAt, o.UpdatedAt, o.Deleted, o.SyncID)
+		if execErr != nil {
+			log.Error().Err(err).Int("index", i).Msg("failed to exec upsert")
+			return tx.Rollback()
+		}
+	}
+	return tx.Commit()
 }
 
 func (r *SyncEntityRepository) UpdateSyncID(
 	ctx context.Context, IDSyncIDPairs [][2]int,
 ) error {
 	const op = "SyncEntityRepository.UpdateSyncID"
+	log := r.logger.WithOp(op)
+
+	q := fmt.Sprintf("UPDATE %s SET sync_id=? WHERE id=?;", r.table)
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to begin transaction")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	stmt, err := tx.PrepareContext(ctx, q)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to prepare stmt")
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+
+	for i, p := range IDSyncIDPairs {
+		_, execErr := stmt.ExecContext(ctx, p[1], p[0])
+		if execErr != nil {
+			log.Error().Err(err).Int("index", i).Msg("failed to exec upsert")
+			return tx.Rollback()
+		}
+	}
+	return tx.Commit()
 }
 
 func IsSQLiteEniqueErr(err error) bool {
