@@ -218,7 +218,7 @@ func (a *App) getSyncCommand() *command.Command {
 	logoutH := authhandler.NewLogout(a.log, syncCloser, os.Stdout)
 	logoutC := synccommand.NewLogout(logoutH)
 
-	syncRunner := syncservice.NewWorkerPool(a.log, syncRepo, a.syncTick)
+	syncRunner := syncservice.NewWorkerPool(a.log, syncRepo, nil, a.syncTick)
 	startH := synchandler.NewStart(a.log, syncRunner, os.Stdout)
 	startC := synccommand.NewStart(startH)
 

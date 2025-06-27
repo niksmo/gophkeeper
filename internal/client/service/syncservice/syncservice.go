@@ -232,16 +232,22 @@ func (c *SyncCloser) error(op string, err error) error {
 	return fmt.Errorf("%s: %w", op, err)
 }
 
+type SyncWorker interface {
+	DoJob(context.Context)
+}
+
 type SyncWorkerPool struct {
-	logger logger.Logger
-	repo   SyncRepo
-	tick   time.Duration
+	logger      logger.Logger
+	repo        SyncRepo
+	wPool       []SyncWorker
+	tick        time.Duration
+	cancelJobFn context.CancelFunc
 }
 
 func NewWorkerPool(
-	logger logger.Logger, repo SyncRepo, tick time.Duration,
+	l logger.Logger, r SyncRepo, wP []SyncWorker, t time.Duration,
 ) *SyncWorkerPool {
-	return &SyncWorkerPool{logger, repo, tick}
+	return &SyncWorkerPool{logger: l, repo: r, wPool: wP, tick: t}
 }
 
 func (s *SyncWorkerPool) Run(ctx context.Context, token string) {
@@ -257,7 +263,9 @@ func (s *SyncWorkerPool) Run(ctx context.Context, token string) {
 		select {
 		case <-ticker.C:
 			log.Debug().Msg("begin next synchronization tick")
-			// TODO: do sync work
+
+			s.doSync(ctx)
+
 		case <-ctx.Done():
 			log.Debug().Str(
 				"ctxErr", ctx.Err().Error()).Msg("receive context done")
@@ -266,6 +274,30 @@ func (s *SyncWorkerPool) Run(ctx context.Context, token string) {
 			return
 		}
 	}
+}
+
+func (s *SyncWorkerPool) doSync(ctx context.Context) {
+	s.intPrevJob()
+	ctx, cancelJobFn := s.getJobTimeout(ctx)
+	for _, w := range s.wPool {
+		go w.DoJob(ctx)
+	}
+	s.cancelJobFn = cancelJobFn
+}
+
+func (s *SyncWorkerPool) getJobTimeout(
+	ctx context.Context,
+) (context.Context, context.CancelFunc) {
+	return context.WithTimeoutCause(
+		ctx, s.tick, errors.New("job timeout expired"),
+	)
+}
+
+func (s *SyncWorkerPool) intPrevJob() {
+	if s.cancelJobFn == nil {
+		return
+	}
+	s.cancelJobFn()
 }
 
 func (s *SyncWorkerPool) stop() {

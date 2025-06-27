@@ -8,22 +8,22 @@ import (
 type LtSrvDTO struct {
 	ID        int
 	Name      string
-	UpdatedAt time.Time
+	UpdatedAt time.Time // unix milliseconds int64
 }
 
 type SrvDTO struct {
 	ID        int
 	Name      string
 	Data      []byte
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time // unix milliseconds int64
+	UpdatedAt time.Time // unix milliseconds int64
 	Deleted   bool
 }
 
 type LtClDTO struct {
 	ID        int
 	Name      string
-	UpdatedAt time.Time
+	UpdatedAt time.Time // unix milliseconds int64
 	SyncID    int
 }
 
@@ -31,8 +31,8 @@ type ClDTO struct {
 	ID        int
 	Name      string
 	Data      []byte
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time // unix milliseconds int64
+	UpdatedAt time.Time // unix milliseconds int64
 	Deleted   bool
 	SyncID    int
 }
@@ -40,14 +40,14 @@ type ClDTO struct {
 type Server interface {
 	GetLtData() []LtSrvDTO
 	GetAllData() []SrvDTO
-	GetData([]int) []SrvDTO
+	GetData([]int) []SrvDTO   // slice of ID's
 	InsertData([]ClDTO) []int // return ID slice for SyncID
 }
 
 type Client interface {
 	GetLtData() []LtClDTO
 	GetAllData() []ClDTO
-	GetData([]int) []ClDTO
+	GetData([]int) []ClDTO // slice of ID's
 	InsertData([]SrvDTO)   // don't forget about sync_id it SrvDTO.ID
 	InsertSyncID([][2]int) // pass key value pairs [ID, syncID] for set sync_id to rows
 }
