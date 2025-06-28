@@ -291,50 +291,6 @@ func (r *SyncEntityRepository) GetSliceByIDs(
 	return r.querySlice(ctx, log, op, stmt)
 }
 
-func (r *SyncEntityRepository) querySlice(
-	ctx context.Context, log logger.Logger, op string, stmt string,
-) ([]model.LocalPayload, error) {
-	rows, err := r.db.QueryContext(ctx, stmt)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to select rows")
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	defer rows.Close()
-
-	data := make([]model.LocalPayload, 0)
-
-	for rows.Next() {
-		var m model.LocalPayload
-
-		if err := m.ScanRow(rows); err != nil {
-			log.Error().Err(err).Msg("failed to scan row")
-			return nil, fmt.Errorf("%s: %w", op, err)
-		}
-
-		data = append(data, m)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Error().Err(err).Msg("failed to select rows")
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return data, nil
-}
-
-func (r *SyncEntityRepository) makeStrIDList(sID []int64) string {
-	var b strings.Builder
-	lastIdx := len(sID) - 1
-	for idx, id := range sID {
-		b.WriteString(strconv.FormatInt(id, 10))
-
-		if idx != lastIdx {
-			b.WriteString(", ")
-		}
-	}
-	return b.String()
-}
-
 func (r *SyncEntityRepository) UpdateSliceBySyncIDs(
 	ctx context.Context, data []model.SyncPayload,
 ) error {
@@ -454,6 +410,50 @@ func (r *SyncEntityRepository) InsertSliceSyncID(
 		}
 	}
 	return tx.Commit()
+}
+
+func (r *SyncEntityRepository) makeStrIDList(sID []int64) string {
+	var b strings.Builder
+	lastIdx := len(sID) - 1
+	for idx, id := range sID {
+		b.WriteString(strconv.FormatInt(id, 10))
+
+		if idx != lastIdx {
+			b.WriteString(", ")
+		}
+	}
+	return b.String()
+}
+
+func (r *SyncEntityRepository) querySlice(
+	ctx context.Context, log logger.Logger, op string, stmt string,
+) ([]model.LocalPayload, error) {
+	rows, err := r.db.QueryContext(ctx, stmt)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	data := make([]model.LocalPayload, 0)
+
+	for rows.Next() {
+		var m model.LocalPayload
+
+		if err := m.ScanRow(rows); err != nil {
+			log.Error().Err(err).Msg("failed to scan row")
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		data = append(data, m)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return data, nil
 }
 
 func isSQLiteEniqueErr(err error) bool {

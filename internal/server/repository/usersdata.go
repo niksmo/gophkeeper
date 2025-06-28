@@ -10,16 +10,16 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
-type table int8
+type Table int8
 
 const (
-	Passwords table = iota
+	Passwords Table = iota
 	Cards
 	Texts
 	Binaries
 )
 
-func (t table) String() string {
+func (t Table) String() string {
 	switch t {
 	case Passwords:
 		return "passwords"
@@ -43,7 +43,7 @@ func NewUsersDataRepository(l logger.Logger, s Storage) *UsersDataRepository {
 }
 
 func (r *UsersDataRepository) GetComparable(
-	ctx context.Context, t table, userID int,
+	ctx context.Context, t Table, userID int,
 ) ([]model.SyncComparable, error) {
 	const op = "UsersDataRepository.GetComparable"
 	log := r.logger.WithOp(op)
@@ -78,7 +78,7 @@ func (r *UsersDataRepository) GetComparable(
 }
 
 func (r *UsersDataRepository) GetAll(
-	ctx context.Context, t table, userID int,
+	ctx context.Context, t Table, userID int,
 ) ([]model.SyncPayload, error) {
 	const op = "UsersDataRepository.GetAll"
 	log := r.logger.WithOp(op)
@@ -95,7 +95,7 @@ func (r *UsersDataRepository) GetAll(
 }
 
 func (r *UsersDataRepository) GetSliceByIDs(
-	ctx context.Context, t table, userID int, sID []int64,
+	ctx context.Context, t Table, userID int, sID []int64,
 ) ([]model.SyncPayload, error) {
 	const op = "UsersDataRepository.GetSliceByIDs"
 	log := r.logger.WithOp(op)
@@ -110,39 +110,8 @@ func (r *UsersDataRepository) GetSliceByIDs(
 	return r.querySlice(ctx, log, op, stmt, userID)
 }
 
-func (r *UsersDataRepository) querySlice(
-	ctx context.Context, log logger.Logger, op string, stmt string, userID int,
-) ([]model.SyncPayload, error) {
-	rows, err := r.db.QueryContext(ctx, stmt, userID)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to select rows")
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	defer rows.Close()
-
-	data := make([]model.SyncPayload, 0)
-
-	for rows.Next() {
-		var m model.SyncPayload
-
-		if err := m.ScanRow(rows); err != nil {
-			log.Error().Err(err).Msg("failed to scan row")
-			return nil, fmt.Errorf("%s: %w", op, err)
-		}
-
-		data = append(data, m)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Error().Err(err).Msg("failed to get users data rows")
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return data, nil
-}
-
 func (r *UsersDataRepository) UpdateSliceByIDs(
-	ctx context.Context, t table, data []model.SyncPayload,
+	ctx context.Context, t Table, data []model.SyncPayload,
 ) error {
 	const op = "UsersDataRepository.UpdateSliceByIDs"
 	log := r.logger.WithOp(op)
@@ -179,7 +148,7 @@ func (r *UsersDataRepository) UpdateSliceByIDs(
 }
 
 func (r *UsersDataRepository) InsertSlice(
-	ctx context.Context, t table, userID int, data []model.SyncPayload,
+	ctx context.Context, t Table, userID int, data []model.SyncPayload,
 ) ([]int64, error) {
 	const op = "UsersDataRepository.InsertSlice"
 	log := r.logger.WithOp(op)
@@ -218,6 +187,37 @@ func (r *UsersDataRepository) InsertSlice(
 		s = append(s, id)
 	}
 	return s, tx.Commit()
+}
+
+func (r *UsersDataRepository) querySlice(
+	ctx context.Context, log logger.Logger, op string, stmt string, userID int,
+) ([]model.SyncPayload, error) {
+	rows, err := r.db.QueryContext(ctx, stmt, userID)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to select rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	data := make([]model.SyncPayload, 0)
+
+	for rows.Next() {
+		var m model.SyncPayload
+
+		if err := m.ScanRow(rows); err != nil {
+			log.Error().Err(err).Msg("failed to scan row")
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		data = append(data, m)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error().Err(err).Msg("failed to get users data rows")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return data, nil
 }
 
 func (r *UsersDataRepository) makeStrIDList(sID []int64) string {
