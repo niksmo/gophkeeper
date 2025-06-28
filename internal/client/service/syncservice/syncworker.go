@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"sync"
 
 	"github.com/niksmo/gophkeeper/internal/client/model"
 	"github.com/niksmo/gophkeeper/pkg/logger"
@@ -19,6 +20,7 @@ type LocalRepo interface {
 }
 
 type ServerClient interface {
+	SetToken(string)
 	GetComparable(context.Context) ([]model.SyncComparable, error)
 	GetAll(context.Context) ([]model.SyncPayload, error)
 	GetSliceByIDs(ctx context.Context, sID []int64) ([]model.SyncPayload, error)
@@ -41,7 +43,9 @@ func NewWorker(l logger.Logger, clR LocalRepo, srvR ServerClient) *Worker {
 	return &Worker{l, clR, srvR}
 }
 
-func (w *Worker) DoJob(ctx context.Context) {
+func (w *Worker) DoJob(ctx context.Context, token string) {
+	sync.OnceFunc(func() { w.server.SetToken(token) })
+
 	srvComp, err := w.getServerComparable(ctx)
 	if err != nil {
 		return
@@ -74,7 +78,6 @@ func (w *Worker) DoJob(ctx context.Context) {
 
 	go w.handleServerData(ctx, srvIDs)
 	go w.handleLocalData(ctx, locIDs)
-
 }
 
 func (w *Worker) serverNoData(srvComp []model.SyncComparable) bool {

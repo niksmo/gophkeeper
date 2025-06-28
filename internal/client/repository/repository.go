@@ -432,7 +432,7 @@ func (r *SyncEntityRepository) InsertSlice(
 }
 
 func (r *SyncEntityRepository) InsertSliceSyncID(
-	ctx context.Context, IDSyncIDPairs [][2]int,
+	ctx context.Context, IDSyncIDPairs [][2]int64,
 ) error {
 	const op = "SyncEntityRepository.InsertSliceSyncID"
 	log := r.logger.WithOp(op)

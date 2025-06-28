@@ -11,6 +11,7 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/client/dto"
 	"github.com/niksmo/gophkeeper/internal/client/repository"
+
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
@@ -233,7 +234,7 @@ func (c *SyncCloser) error(op string, err error) error {
 }
 
 type SyncWorker interface {
-	DoJob(context.Context)
+	DoJob(ctx context.Context, token string)
 }
 
 type SyncWorkerPool struct {
@@ -264,7 +265,7 @@ func (s *SyncWorkerPool) Run(ctx context.Context, token string) {
 		case <-ticker.C:
 			log.Debug().Msg("begin next synchronization tick")
 
-			s.doSync(ctx)
+			s.doSync(ctx, token)
 
 		case <-ctx.Done():
 			log.Debug().Str(
@@ -276,11 +277,11 @@ func (s *SyncWorkerPool) Run(ctx context.Context, token string) {
 	}
 }
 
-func (s *SyncWorkerPool) doSync(ctx context.Context) {
+func (s *SyncWorkerPool) doSync(ctx context.Context, token string) {
 	s.intPrevJob()
 	ctx, cancelJobFn := s.getJobTimeout(ctx)
 	for _, w := range s.wPool {
-		go w.DoJob(ctx)
+		go w.DoJob(ctx, token)
 	}
 	s.cancelJobFn = cancelJobFn
 }
