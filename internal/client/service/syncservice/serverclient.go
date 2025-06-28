@@ -5,39 +5,38 @@ import (
 
 	"github.com/niksmo/gophkeeper/internal/model"
 	"github.com/niksmo/gophkeeper/pkg/logger"
-	"google.golang.org/grpc"
+	usersdatapb "github.com/niksmo/gophkeeper/proto/usersdata"
 )
 
 type gRPCSyncClient struct {
 	logger logger.Logger
-	conn   *grpc.ClientConn
-	// client syncpb.SynchronizationClient
+	client usersdatapb.UsersDataSynchronizationClient
 	entity string
 	token  string
 }
 
 func NewGRPCSyncClientPwd(
-	l logger.Logger, c *grpc.ClientConn,
+	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
 ) ServerClient {
-	return &gRPCSyncClient{logger: l, conn: c, entity: "passwords"}
+	return &gRPCSyncClient{logger: l, client: c, entity: "passwords"}
 }
 
 func NewGRPCSyncClientCard(
-	l logger.Logger, c *grpc.ClientConn,
+	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
 ) ServerClient {
-	return &gRPCSyncClient{logger: l, conn: c, entity: "cards"}
+	return &gRPCSyncClient{logger: l, client: c, entity: "cards"}
 }
 
 func NewGRPCSyncClientBin(
-	l logger.Logger, c *grpc.ClientConn,
+	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
 ) ServerClient {
-	return &gRPCSyncClient{logger: l, conn: c, entity: "binaries"}
+	return &gRPCSyncClient{logger: l, client: c, entity: "binaries"}
 }
 
 func NewGRPCSyncClientText(
-	l logger.Logger, c *grpc.ClientConn,
+	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
 ) ServerClient {
-	return &gRPCSyncClient{logger: l, conn: c, entity: "texts"}
+	return &gRPCSyncClient{logger: l, client: c, entity: "texts"}
 }
 
 func (c *gRPCSyncClient) SetToken(token string) {

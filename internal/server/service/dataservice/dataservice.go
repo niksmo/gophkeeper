@@ -2,11 +2,15 @@ package dataservice
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"github.com/niksmo/gophkeeper/internal/model"
 	"github.com/niksmo/gophkeeper/internal/server/repository"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
+
+var ErrInvalidEntity = errors.New("invalid entity")
 
 type DataProvider interface {
 	GetComparable(
@@ -38,4 +42,20 @@ type DataSyncService struct {
 
 func NewSync(l logger.Logger, p DataProvider) *DataSyncService {
 	return &DataSyncService{l, p}
+}
+
+func (s *DataSyncService) parseEntity(
+	entity string,
+) (repository.Table, error) {
+	switch {
+	case strings.EqualFold(entity, repository.Passwords.String()):
+		return repository.Passwords, nil
+	case strings.EqualFold(entity, repository.Cards.String()):
+		return repository.Cards, nil
+	case strings.EqualFold(entity, repository.Binaries.String()):
+		return repository.Binaries, nil
+	case strings.EqualFold(entity, repository.Texts.String()):
+		return repository.Texts, nil
+	}
+	return repository.Table(-1), ErrInvalidEntity
 }
