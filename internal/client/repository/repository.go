@@ -340,10 +340,10 @@ func (r *SyncEntityRepository) makeStrIDList(sID []int64) string {
 	return b.String()
 }
 
-func (r *SyncEntityRepository) UpdateBySyncIDs(
+func (r *SyncEntityRepository) UpdateSliceBySyncIDs(
 	ctx context.Context, data []model.SyncPayload,
 ) error {
-	const op = "SyncEntityRepository.UpdateBySyncIDs"
+	const op = "SyncEntityRepository.UpdateSliceBySyncIDs"
 	log := r.logger.WithOp(op)
 
 	q := fmt.Sprintf(`
@@ -383,16 +383,22 @@ func (r *SyncEntityRepository) UpdateBySyncIDs(
 
 }
 
-func (r *SyncEntityRepository) Insert(
+func (r *SyncEntityRepository) InsertSlice(
 	ctx context.Context, data []model.LocalPayload,
 ) error {
-	const op = "SyncEntityRepository.Insert"
+	const op = "SyncEntityRepository.InsertSlice"
 	log := r.logger.WithOp(op)
 
 	q := fmt.Sprintf(`
 		INSERT INTO %s
 		  (name, data, created_at, updated_at, deleted, sync_id)
-		VALUES (?, ?, ?, ?, ?, ?);
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT (name) DO UPDATE
+		SET name=excluded.name,
+			data=excluded.data,
+			updated_at=excluded.updated_at,
+			deleted=excluded.deleted,
+			sync_id=excluded.sync_id;
 		`,
 		r.table,
 	)
@@ -425,10 +431,10 @@ func (r *SyncEntityRepository) Insert(
 	return tx.Commit()
 }
 
-func (r *SyncEntityRepository) UpdateSyncID(
+func (r *SyncEntityRepository) InsertSliceSyncID(
 	ctx context.Context, IDSyncIDPairs [][2]int,
 ) error {
-	const op = "SyncEntityRepository.UpdateSyncID"
+	const op = "SyncEntityRepository.InsertSliceSyncID"
 	log := r.logger.WithOp(op)
 
 	q := fmt.Sprintf("UPDATE %s SET sync_id=? WHERE id=?;", r.table)
