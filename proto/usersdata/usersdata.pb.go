@@ -23,9 +23,9 @@ const (
 
 type Comparable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	UpdatedAt     int64                  `protobuf:"varint,3,opt,name=updatedAt,proto3" json:"updatedAt,omitempty"`
+	ID            int64                  `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
+	UpdatedAt     int64                  `protobuf:"varint,3,opt,name=UpdatedAt,proto3" json:"UpdatedAt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -60,9 +60,9 @@ func (*Comparable) Descriptor() ([]byte, []int) {
 	return file_proto_usersdata_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Comparable) GetId() int64 {
+func (x *Comparable) GetID() int64 {
 	if x != nil {
-		return x.Id
+		return x.ID
 	}
 	return 0
 }
@@ -83,12 +83,12 @@ func (x *Comparable) GetUpdatedAt() int64 {
 
 type Payload struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Data          []byte                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	CreatedAt     int64                  `protobuf:"varint,4,opt,name=createdAt,proto3" json:"createdAt,omitempty"`
-	UpdatedAt     int64                  `protobuf:"varint,5,opt,name=updatedAt,proto3" json:"updatedAt,omitempty"`
-	Deleted       bool                   `protobuf:"varint,6,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	ID            int64                  `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
+	Data          []byte                 `protobuf:"bytes,3,opt,name=Data,proto3" json:"Data,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,4,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
+	UpdatedAt     int64                  `protobuf:"varint,5,opt,name=UpdatedAt,proto3" json:"UpdatedAt,omitempty"`
+	Deleted       bool                   `protobuf:"varint,6,opt,name=Deleted,proto3" json:"Deleted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -123,9 +123,9 @@ func (*Payload) Descriptor() ([]byte, []int) {
 	return file_proto_usersdata_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Payload) GetId() int64 {
+func (x *Payload) GetID() int64 {
 	if x != nil {
-		return x.Id
+		return x.ID
 	}
 	return 0
 }
@@ -167,8 +167,8 @@ func (x *Payload) GetDeleted() bool {
 
 type GetComparableRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Entity        string                 `protobuf:"bytes,2,opt,name=entity,proto3" json:"entity,omitempty"`
+	Token         string                 `protobuf:"bytes,1,opt,name=Token,proto3" json:"Token,omitempty"`
+	Entity        string                 `protobuf:"bytes,2,opt,name=Entity,proto3" json:"Entity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -219,7 +219,7 @@ func (x *GetComparableRequest) GetEntity() string {
 
 type GetComparableResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []*Comparable          `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Data          []*Comparable          `protobuf:"bytes,1,rep,name=Data,proto3" json:"Data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -263,8 +263,8 @@ func (x *GetComparableResponse) GetData() []*Comparable {
 
 type GetAllRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Entity        string                 `protobuf:"bytes,2,opt,name=entity,proto3" json:"entity,omitempty"`
+	Token         string                 `protobuf:"bytes,1,opt,name=Token,proto3" json:"Token,omitempty"`
+	Entity        string                 `protobuf:"bytes,2,opt,name=Entity,proto3" json:"Entity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -315,7 +315,7 @@ func (x *GetAllRequest) GetEntity() string {
 
 type GetAllResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []*Payload             `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Data          []*Payload             `protobuf:"bytes,1,rep,name=Data,proto3" json:"Data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -359,9 +359,9 @@ func (x *GetAllResponse) GetData() []*Payload {
 
 type GetSliceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Entity        string                 `protobuf:"bytes,2,opt,name=entity,proto3" json:"entity,omitempty"`
-	Ids           []int64                `protobuf:"varint,3,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	Token         string                 `protobuf:"bytes,1,opt,name=Token,proto3" json:"Token,omitempty"`
+	Entity        string                 `protobuf:"bytes,2,opt,name=Entity,proto3" json:"Entity,omitempty"`
+	IDs           []int64                `protobuf:"varint,3,rep,packed,name=IDs,proto3" json:"IDs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -410,16 +410,16 @@ func (x *GetSliceRequest) GetEntity() string {
 	return ""
 }
 
-func (x *GetSliceRequest) GetIds() []int64 {
+func (x *GetSliceRequest) GetIDs() []int64 {
 	if x != nil {
-		return x.Ids
+		return x.IDs
 	}
 	return nil
 }
 
 type GetSliceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []*Payload             `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Data          []*Payload             `protobuf:"bytes,1,rep,name=Data,proto3" json:"Data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -463,9 +463,9 @@ func (x *GetSliceResponse) GetData() []*Payload {
 
 type UpdateSliceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Entity        string                 `protobuf:"bytes,2,opt,name=entity,proto3" json:"entity,omitempty"`
-	Data          []*Payload             `protobuf:"bytes,3,rep,name=data,proto3" json:"data,omitempty"`
+	Token         string                 `protobuf:"bytes,1,opt,name=Token,proto3" json:"Token,omitempty"`
+	Entity        string                 `protobuf:"bytes,2,opt,name=Entity,proto3" json:"Entity,omitempty"`
+	Data          []*Payload             `protobuf:"bytes,3,rep,name=Data,proto3" json:"Data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -567,9 +567,9 @@ func (x *UpdateSliceResponse) GetOk() bool {
 
 type InsertSliceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Entity        string                 `protobuf:"bytes,2,opt,name=entity,proto3" json:"entity,omitempty"`
-	Data          []*Payload             `protobuf:"bytes,3,rep,name=data,proto3" json:"data,omitempty"`
+	Token         string                 `protobuf:"bytes,1,opt,name=Token,proto3" json:"Token,omitempty"`
+	Entity        string                 `protobuf:"bytes,2,opt,name=Entity,proto3" json:"Entity,omitempty"`
+	Data          []*Payload             `protobuf:"bytes,3,rep,name=Data,proto3" json:"Data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -627,7 +627,7 @@ func (x *InsertSliceRequest) GetData() []*Payload {
 
 type InsertSliceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ids           []int64                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	IDs           []int64                `protobuf:"varint,1,rep,packed,name=IDs,proto3" json:"IDs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -662,9 +662,9 @@ func (*InsertSliceResponse) Descriptor() ([]byte, []int) {
 	return file_proto_usersdata_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *InsertSliceResponse) GetIds() []int64 {
+func (x *InsertSliceResponse) GetIDs() []int64 {
 	if x != nil {
-		return x.Ids
+		return x.IDs
 	}
 	return nil
 }
@@ -676,44 +676,44 @@ const file_proto_usersdata_proto_rawDesc = "" +
 	"\x15proto/usersdata.proto\x12\tusersdata\"N\n" +
 	"\n" +
 	"Comparable\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
-	"\tupdatedAt\x18\x03 \x01(\x03R\tupdatedAt\"\x97\x01\n" +
+	"\x02ID\x18\x01 \x01(\x03R\x02ID\x12\x12\n" +
+	"\x04Name\x18\x02 \x01(\tR\x04Name\x12\x1c\n" +
+	"\tUpdatedAt\x18\x03 \x01(\x03R\tUpdatedAt\"\x97\x01\n" +
 	"\aPayload\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04data\x18\x03 \x01(\fR\x04data\x12\x1c\n" +
-	"\tcreatedAt\x18\x04 \x01(\x03R\tcreatedAt\x12\x1c\n" +
-	"\tupdatedAt\x18\x05 \x01(\x03R\tupdatedAt\x12\x18\n" +
-	"\adeleted\x18\x06 \x01(\bR\adeleted\"D\n" +
+	"\x02ID\x18\x01 \x01(\x03R\x02ID\x12\x12\n" +
+	"\x04Name\x18\x02 \x01(\tR\x04Name\x12\x12\n" +
+	"\x04Data\x18\x03 \x01(\fR\x04Data\x12\x1c\n" +
+	"\tCreatedAt\x18\x04 \x01(\x03R\tCreatedAt\x12\x1c\n" +
+	"\tUpdatedAt\x18\x05 \x01(\x03R\tUpdatedAt\x12\x18\n" +
+	"\aDeleted\x18\x06 \x01(\bR\aDeleted\"D\n" +
 	"\x14GetComparableRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x16\n" +
-	"\x06entity\x18\x02 \x01(\tR\x06entity\"B\n" +
+	"\x05Token\x18\x01 \x01(\tR\x05Token\x12\x16\n" +
+	"\x06Entity\x18\x02 \x01(\tR\x06Entity\"B\n" +
 	"\x15GetComparableResponse\x12)\n" +
-	"\x04data\x18\x01 \x03(\v2\x15.usersdata.ComparableR\x04data\"=\n" +
+	"\x04Data\x18\x01 \x03(\v2\x15.usersdata.ComparableR\x04Data\"=\n" +
 	"\rGetAllRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x16\n" +
-	"\x06entity\x18\x02 \x01(\tR\x06entity\"8\n" +
+	"\x05Token\x18\x01 \x01(\tR\x05Token\x12\x16\n" +
+	"\x06Entity\x18\x02 \x01(\tR\x06Entity\"8\n" +
 	"\x0eGetAllResponse\x12&\n" +
-	"\x04data\x18\x01 \x03(\v2\x12.usersdata.PayloadR\x04data\"Q\n" +
+	"\x04Data\x18\x01 \x03(\v2\x12.usersdata.PayloadR\x04Data\"Q\n" +
 	"\x0fGetSliceRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x16\n" +
-	"\x06entity\x18\x02 \x01(\tR\x06entity\x12\x10\n" +
-	"\x03ids\x18\x03 \x03(\x03R\x03ids\":\n" +
+	"\x05Token\x18\x01 \x01(\tR\x05Token\x12\x16\n" +
+	"\x06Entity\x18\x02 \x01(\tR\x06Entity\x12\x10\n" +
+	"\x03IDs\x18\x03 \x03(\x03R\x03IDs\":\n" +
 	"\x10GetSliceResponse\x12&\n" +
-	"\x04data\x18\x01 \x03(\v2\x12.usersdata.PayloadR\x04data\"j\n" +
+	"\x04Data\x18\x01 \x03(\v2\x12.usersdata.PayloadR\x04Data\"j\n" +
 	"\x12UpdateSliceRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x16\n" +
-	"\x06entity\x18\x02 \x01(\tR\x06entity\x12&\n" +
-	"\x04data\x18\x03 \x03(\v2\x12.usersdata.PayloadR\x04data\"%\n" +
+	"\x05Token\x18\x01 \x01(\tR\x05Token\x12\x16\n" +
+	"\x06Entity\x18\x02 \x01(\tR\x06Entity\x12&\n" +
+	"\x04Data\x18\x03 \x03(\v2\x12.usersdata.PayloadR\x04Data\"%\n" +
 	"\x13UpdateSliceResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"j\n" +
 	"\x12InsertSliceRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x16\n" +
-	"\x06entity\x18\x02 \x01(\tR\x06entity\x12&\n" +
-	"\x04data\x18\x03 \x03(\v2\x12.usersdata.PayloadR\x04data\"'\n" +
+	"\x05Token\x18\x01 \x01(\tR\x05Token\x12\x16\n" +
+	"\x06Entity\x18\x02 \x01(\tR\x06Entity\x12&\n" +
+	"\x04Data\x18\x03 \x03(\v2\x12.usersdata.PayloadR\x04Data\"'\n" +
 	"\x13InsertSliceResponse\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\x03R\x03ids2\x98\x03\n" +
+	"\x03IDs\x18\x01 \x03(\x03R\x03IDs2\x98\x03\n" +
 	"\x18UsersDataSynchronization\x12T\n" +
 	"\rGetComparable\x12\x1f.usersdata.GetComparableRequest\x1a .usersdata.GetComparableResponse\"\x00\x12?\n" +
 	"\x06GetAll\x12\x18.usersdata.GetAllRequest\x1a\x19.usersdata.GetAllResponse\"\x00\x12E\n" +
@@ -749,11 +749,11 @@ var file_proto_usersdata_proto_goTypes = []any{
 	(*InsertSliceResponse)(nil),   // 11: usersdata.InsertSliceResponse
 }
 var file_proto_usersdata_proto_depIdxs = []int32{
-	0,  // 0: usersdata.GetComparableResponse.data:type_name -> usersdata.Comparable
-	1,  // 1: usersdata.GetAllResponse.data:type_name -> usersdata.Payload
-	1,  // 2: usersdata.GetSliceResponse.data:type_name -> usersdata.Payload
-	1,  // 3: usersdata.UpdateSliceRequest.data:type_name -> usersdata.Payload
-	1,  // 4: usersdata.InsertSliceRequest.data:type_name -> usersdata.Payload
+	0,  // 0: usersdata.GetComparableResponse.Data:type_name -> usersdata.Comparable
+	1,  // 1: usersdata.GetAllResponse.Data:type_name -> usersdata.Payload
+	1,  // 2: usersdata.GetSliceResponse.Data:type_name -> usersdata.Payload
+	1,  // 3: usersdata.UpdateSliceRequest.Data:type_name -> usersdata.Payload
+	1,  // 4: usersdata.InsertSliceRequest.Data:type_name -> usersdata.Payload
 	2,  // 5: usersdata.UsersDataSynchronization.GetComparable:input_type -> usersdata.GetComparableRequest
 	4,  // 6: usersdata.UsersDataSynchronization.GetAll:input_type -> usersdata.GetAllRequest
 	6,  // 7: usersdata.UsersDataSynchronization.GetSlice:input_type -> usersdata.GetSliceRequest

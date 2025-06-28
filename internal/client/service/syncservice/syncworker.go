@@ -13,7 +13,7 @@ import (
 type LocalRepo interface {
 	GetComparable(context.Context) ([]model.LocalComparable, error)
 	GetAll(context.Context) ([]model.LocalPayload, error)
-	GetSliceByIDs(ctx context.Context, sID []int64) ([]model.LocalPayload, error)
+	GetSliceByIDs(ctx context.Context, IDs []int64) ([]model.LocalPayload, error)
 	UpdateSliceBySyncIDs(ctx context.Context, data []model.SyncPayload) error
 	InsertSlice(ctx context.Context, data []model.LocalPayload) error
 	InsertSliceSyncID(ctx context.Context, IDSyncIDPairs [][2]int64) error
@@ -23,7 +23,7 @@ type ServerClient interface {
 	SetToken(string)
 	GetComparable(context.Context) ([]model.SyncComparable, error)
 	GetAll(context.Context) ([]model.SyncPayload, error)
-	GetSliceByIDs(ctx context.Context, sID []int64) ([]model.SyncPayload, error)
+	GetSliceByIDs(ctx context.Context, IDs []int64) ([]model.SyncPayload, error)
 	UpdateSliceByIDs(ctx context.Context, data []model.SyncPayload) error
 	InsertSlice(ctx context.Context, data []model.LocalPayload) ([]int64, error)
 }

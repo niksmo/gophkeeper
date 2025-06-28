@@ -22,10 +22,8 @@ var (
 
 type (
 	SyncRepo interface {
-		Create(
-			ctx context.Context, pid int, startedAt time.Time,
-		) (dto.Sync, error)
-
+		Create(ctx context.Context,
+			pid int, startedAt time.Time) (dto.Sync, error)
 		ReadLast(context.Context) (dto.Sync, error)
 		Update(context.Context, dto.Sync) error
 	}
@@ -40,7 +38,9 @@ func NewSyncRunner(logger logger.Logger, repo SyncRepo) *SyncRunner {
 	return &SyncRunner{logger, repo}
 }
 
-func (s *SyncRunner) StartSynchronization(ctx context.Context, token string) error {
+func (s *SyncRunner) StartSynchronization(
+	ctx context.Context, token string,
+) error {
 	const op = "SyncRunner.StartSynchronization"
 
 	syncEntry, err := s.getSyncEntry(ctx)

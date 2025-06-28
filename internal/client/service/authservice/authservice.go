@@ -10,9 +10,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/client/service/syncservice"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	authbp "github.com/niksmo/gophkeeper/proto/auth"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
 
@@ -37,26 +35,20 @@ type (
 
 type gRPCAuthClient struct {
 	logger  logger.Logger
-	conn    *grpc.ClientConn
 	client  authbp.AuthClient
 	timeout time.Duration
 }
 
 func NewGRPCAuthClient(
-	logger logger.Logger, addr string, timeout time.Duration,
+	logger logger.Logger, client authbp.AuthClient, timeout time.Duration,
 ) AuthClient {
-	dialOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.NewClient(addr, dialOpt)
-	if err != nil {
-		panic(err)
-	}
-	return &gRPCAuthClient{logger, conn, authbp.NewAuthClient(conn), timeout}
+
+	return &gRPCAuthClient{logger, client, timeout}
 }
 
 func (c *gRPCAuthClient) RegisterUser(
 	ctx context.Context, login, password string,
 ) (token string, err error) {
-	defer c.conn.Close()
 	ctx, cancel := c.setTimeout(ctx)
 	defer cancel()
 
@@ -75,7 +67,6 @@ func (c *gRPCAuthClient) RegisterUser(
 func (c *gRPCAuthClient) AuthorizeUser(
 	ctx context.Context, login, password string,
 ) (token string, err error) {
-	defer c.conn.Close()
 	ctx, cancel := c.setTimeout(ctx)
 	defer cancel()
 

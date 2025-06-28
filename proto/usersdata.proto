@@ -13,52 +13,52 @@ service UsersDataSynchronization {
 }
 
 message Comparable {
-    int64 id = 1;
-    string name = 2;
-    int64 updatedAt = 3;
+    int64 ID = 1;
+    string Name = 2;
+    int64 UpdatedAt = 3;
 }
 
 message Payload {
-    int64 id = 1;
-    string name = 2;
-    bytes data = 3;
-    int64 createdAt = 4;
-    int64 updatedAt = 5;
-    bool deleted = 6;
+    int64 ID = 1;
+    string Name = 2;
+    bytes Data = 3;
+    int64 CreatedAt = 4;
+    int64 UpdatedAt = 5;
+    bool Deleted = 6;
 }
 
 message GetComparableRequest {
-    string token = 1;
-    string entity = 2;
+    string Token = 1;
+    string Entity = 2;
 }
 
 message GetComparableResponse {
-    repeated Comparable data = 1;
+    repeated Comparable Data = 1;
 }
 
 message GetAllRequest {
-    string token = 1;
-    string entity = 2;
+    string Token = 1;
+    string Entity = 2;
 }
 
 message GetAllResponse {
-    repeated Payload data = 1;
+    repeated Payload Data = 1;
 }
 
 message GetSliceRequest {
-    string token = 1;
-    string entity = 2;
-    repeated int64 ids = 3;
+    string Token = 1;
+    string Entity = 2;
+    repeated int64 IDs = 3;
 }
 
 message GetSliceResponse {
-    repeated Payload data = 1;
+    repeated Payload Data = 1;
 }
 
 message UpdateSliceRequest {
-    string token = 1;
-    string entity = 2;
-    repeated Payload data = 3;
+    string Token = 1;
+    string Entity = 2;
+    repeated Payload Data = 3;
 }
 
 message UpdateSliceResponse {
@@ -66,11 +66,11 @@ message UpdateSliceResponse {
 }
 
 message InsertSliceRequest {
-    string token = 1;
-    string entity = 2;
-    repeated Payload data = 3;
+    string Token = 1;
+    string Entity = 2;
+    repeated Payload Data = 3;
 }
 
 message InsertSliceResponse {
-    repeated int64 ids = 1;
+    repeated int64 IDs = 1;
 }

@@ -1,14 +1,13 @@
 package api
 
 import (
-	"context"
-
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	usersdatapb "github.com/niksmo/gophkeeper/proto/usersdata"
 	"google.golang.org/grpc"
 )
 
 type UsersDataSyncService interface {
+	// TODO: add methods
 }
 
 type usersDataSyncHandler struct {
@@ -25,32 +24,36 @@ func RegisterUsersDataSyncAPI(
 	)
 }
 
-func (h *usersDataSyncHandler) GetAll(
-	ctx context.Context, in *usersdatapb.GetAllRequest,
-) (*usersdatapb.GetAllResponse, error) {
+// func (h *usersDataSyncHandler) GetAll(
+// 	ctx context.Context, in *usersdatapb.GetAllRequest,
+// ) (*usersdatapb.GetAllResponse, error) {
+// 	return nil, nil
+// }
 
-}
+// func (h *usersDataSyncHandler) GetComparable(
+// 	ctx context.Context, in *usersdatapb.GetComparableRequest,
+// ) (*usersdatapb.GetComparableResponse, error) {
+// 	return nil, nil
 
-func (h *usersDataSyncHandler) GetComparable(
-	ctx context.Context, in *usersdatapb.GetComparableRequest,
-) (*usersdatapb.GetComparableResponse, error) {
+// }
 
-}
+// func (h *usersDataSyncHandler) GetSlice(
+// 	ctx context.Context, in *usersdatapb.GetSliceRequest,
+// ) (*usersdatapb.GetSliceResponse, error) {
+// 	return nil, nil
 
-func (h *usersDataSyncHandler) GetSlice(
-	ctx context.Context, in *usersdatapb.GetSliceRequest,
-) (*usersdatapb.GetSliceResponse, error) {
+// }
 
-}
+// func (h *usersDataSyncHandler) InsertSlice(
+// 	ctx context.Context, in *usersdatapb.InsertSliceRequest,
+// ) (*usersdatapb.InsertSliceResponse, error) {
+// 	return nil, nil
 
-func (h *usersDataSyncHandler) InsertSlice(
-	ctx context.Context, in *usersdatapb.InsertSliceRequest,
-) (*usersdatapb.InsertSliceResponse, error) {
+// }
 
-}
+// func (h *usersDataSyncHandler) UpdateSlice(
+// 	ctx context.Context, in *usersdatapb.UpdateSliceRequest,
+// ) (*usersdatapb.UpdateSliceResponse, error) {
+// 	return nil, nil
 
-func (h *usersDataSyncHandler) UpdateSlice(
-	ctx context.Context, in *usersdatapb.UpdateSliceRequest,
-) (*usersdatapb.UpdateSliceResponse, error) {
-
-}
+// }

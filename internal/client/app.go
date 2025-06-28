@@ -26,6 +26,9 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/cipher"
 	"github.com/niksmo/gophkeeper/pkg/encode"
 	"github.com/niksmo/gophkeeper/pkg/logger"
+	authbp "github.com/niksmo/gophkeeper/proto/auth"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Opt struct {
@@ -49,22 +52,26 @@ type App struct {
 	serverAddr  string
 	syncTick    time.Duration
 	authTimeout time.Duration
+	conn        *grpc.ClientConn
 }
 
 func New(opt Opt) *App {
 	log := logger.NewPretty(opt.LogLevel)
+
 	app := &App{
-		log,
-		command.NewRootCommand(opt.Version, opt.BuildDate),
-		storage.New(log, opt.DSN),
-		encode.NewEncoder(),
-		encode.NewDecoder(),
-		cipher.NewEncrypter(),
-		cipher.NewDecrypter(),
-		opt.ServerAddr,
-		opt.SyncTick,
-		opt.AuthTimeout,
+		log:         log,
+		cmd:         command.NewRootCommand(opt.Version, opt.BuildDate),
+		storage:     storage.New(log, opt.DSN),
+		encoder:     encode.NewEncoder(),
+		decoder:     encode.NewDecoder(),
+		encrypter:   cipher.NewEncrypter(),
+		decrypter:   cipher.NewDecrypter(),
+		serverAddr:  opt.ServerAddr,
+		syncTick:    opt.SyncTick,
+		authTimeout: opt.AuthTimeout,
 	}
+
+	app.initGRPCConn()
 	app.registerCommands()
 	return app
 }
@@ -74,6 +81,15 @@ func (a *App) Run(ctx context.Context) {
 	if err := a.cmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
+}
+
+func (a *App) initGRPCConn() {
+	dialOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
+	conn, err := grpc.NewClient(a.serverAddr, dialOpt)
+	if err != nil {
+		a.log.Fatal().Err(err).Msg("failed to init gRPC conn")
+	}
+	a.conn = conn
 }
 
 func (a *App) registerCommands() {
@@ -199,8 +215,9 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
+
 	authClient := authservice.NewGRPCAuthClient(
-		a.log, a.serverAddr, a.authTimeout,
+		a.log, authbp.NewAuthClient(a.conn), a.authTimeout,
 	)
 	syncRepo := repository.NewSync(a.log, a.storage)
 
