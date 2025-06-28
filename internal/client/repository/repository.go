@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-sqlite3"
-	"github.com/niksmo/gophkeeper/internal/client/model"
+	"github.com/niksmo/gophkeeper/internal/model"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 
@@ -71,7 +71,7 @@ func (r *Repository) Create(
 	t := time.Now()
 	err := r.db.QueryRowContext(ctx, stmt, name, data, t, t).Scan(&id)
 	if err != nil {
-		if IsSQLiteEniqueErr(err) {
+		if isSQLiteEniqueErr(err) {
 			log.Debug().Err(err).Msg("object already exists")
 			return 0, fmt.Errorf("%s: %w", op, ErrAlreadyExists)
 		}
@@ -161,7 +161,7 @@ func (r *Repository) Update(
 		ctx, stmt, name, data, time.Now(), entryNum,
 	).Scan(&id)
 	if err != nil {
-		if IsSQLiteEniqueErr(err) {
+		if isSQLiteEniqueErr(err) {
 			log.Debug().Err(err).Msg("object already exists")
 			return fmt.Errorf("%s: %w", op, ErrAlreadyExists)
 		}
@@ -314,11 +314,6 @@ func (r *SyncEntityRepository) querySlice(
 		data = append(data, m)
 	}
 
-	if err := rows.Close(); err != nil {
-		log.Error().Err(err).Msg("failed to close rows")
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
 	if err := rows.Err(); err != nil {
 		log.Error().Err(err).Msg("failed to select rows")
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -371,7 +366,7 @@ func (r *SyncEntityRepository) UpdateSliceBySyncIDs(
 		_, execErr := stmt.ExecContext(ctx, o.Name, o.Data,
 			o.CreatedAt, o.UpdatedAt, o.Deleted, o.ID)
 		if execErr != nil {
-			if IsSQLiteEniqueErr(err) {
+			if isSQLiteEniqueErr(err) {
 				log.Error().Err(err).Int("index", i).Msg("unexpected name")
 				continue
 			}
@@ -380,7 +375,6 @@ func (r *SyncEntityRepository) UpdateSliceBySyncIDs(
 		}
 	}
 	return tx.Commit()
-
 }
 
 func (r *SyncEntityRepository) InsertSlice(
@@ -420,11 +414,11 @@ func (r *SyncEntityRepository) InsertSlice(
 		_, execErr := stmt.ExecContext(ctx, o.Name, o.Data,
 			o.CreatedAt, o.UpdatedAt, o.Deleted, o.SyncID)
 		if execErr != nil {
-			if IsSQLiteEniqueErr(err) {
+			if isSQLiteEniqueErr(err) {
 				log.Error().Err(err).Int("index", i).Msg("unexpected name")
 				continue
 			}
-			log.Error().Err(err).Int("index", i).Msg("failed to exec upsert")
+			log.Error().Err(err).Int("index", i).Msg("failed to exec update")
 			return tx.Rollback()
 		}
 	}
@@ -462,7 +456,7 @@ func (r *SyncEntityRepository) InsertSliceSyncID(
 	return tx.Commit()
 }
 
-func IsSQLiteEniqueErr(err error) bool {
+func isSQLiteEniqueErr(err error) bool {
 	var sqliteErr sqlite3.Error
 	return errors.As(err, &sqliteErr) &&
 		sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique

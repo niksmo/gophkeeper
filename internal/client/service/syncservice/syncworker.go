@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/niksmo/gophkeeper/internal/client/model"
+	"github.com/niksmo/gophkeeper/internal/model"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 )
 

@@ -3,7 +3,7 @@ package syncservice
 import (
 	"context"
 
-	"github.com/niksmo/gophkeeper/internal/client/model"
+	"github.com/niksmo/gophkeeper/internal/model"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	"google.golang.org/grpc"
 )
