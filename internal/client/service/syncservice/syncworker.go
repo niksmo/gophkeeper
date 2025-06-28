@@ -26,6 +26,11 @@ type ServerClient interface {
 	InsertSlice(ctx context.Context, data []model.LocalPayload) ([]int64, error)
 }
 
+type lists struct {
+	insert []int64
+	update []int64
+}
+
 type Worker struct {
 	logger logger.Logger
 	local  LocalRepo
@@ -37,83 +42,39 @@ func NewWorker(l logger.Logger, clR LocalRepo, srvR ServerClient) *Worker {
 }
 
 func (w *Worker) DoJob(ctx context.Context) {
-	const op = "Worker.DoJob"
-	log := w.logger.WithOp(op)
-
-	srvComp, err := w.server.GetComparable(ctx)
+	srvComp, err := w.getServerComparable(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to get server comparable objects")
 		return
 	}
 
 	if w.serverNoData(srvComp) {
-		locData, err := w.local.GetAll(ctx)
+		locData, err := w.getLocalAll(ctx)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to get all local data")
 			return
 		}
 		w.insertToServer(ctx, locData)
 		return
 	}
 
-	locComp, err := w.local.GetComparable(ctx)
+	locComp, err := w.getLocalComparable(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to get local comparable objects")
 		return
 	}
 
 	if w.localNoData(locComp) {
-		srvData, err := w.server.GetAll(ctx)
+		srvData, err := w.getServerAll(ctx)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to get all server data")
 			return
 		}
 		w.insertToLocal(ctx, srvData)
 		return
 	}
 
-	syncCompMap, newCompMap := w.makeLocalComparableMaps(locComp)
-	fromSrv, fromLoc, notSyncYet := w.makeUpdateSlices(srvComp, syncCompMap)
-	insFromSrv, insFromLoc := w.makeInsertSlices(notSyncYet, newCompMap)
+	srvIDs, locIDs := w.compare(locComp, srvComp)
 
-	updFromSrvSize := len(fromSrv)
+	go w.handleServerData(ctx, srvIDs)
+	go w.handleLocalData(ctx, locIDs)
 
-	fromSrv = append(fromSrv, insFromSrv...)
-	srvData, err := w.server.GetSliceByIDs(ctx, fromSrv)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to get data from server by IDs")
-		return
-	}
-
-	updFromSrvData, insFromSrvData := srvData[:updFromSrvSize], srvData[updFromSrvSize:]
-
-	err = w.updateLocal(ctx, updFromSrvData)
-	if err != nil {
-		return
-	}
-
-	err = w.insertToLocal(ctx, insFromSrvData)
-	if err != nil {
-		return
-	}
-
-	updFromLocSize := len(fromLoc)
-
-	fromLoc = append(fromLoc, insFromLoc...)
-	locData, err := w.local.GetSliceByIDs(ctx, fromLoc)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to get local data by IDs")
-		return
-	}
-
-	updFromLocData, insFromLocData := locData[:updFromLocSize], locData[updFromLocSize:]
-
-	err = w.updateServer(ctx, updFromLocData)
-	if err != nil {
-		return
-	}
-
-	w.insertToServer(ctx, insFromLocData)
 }
 
 func (w *Worker) serverNoData(srvComp []model.SyncComparable) bool {
@@ -124,7 +85,9 @@ func (w *Worker) localNoData(locComp []model.LocalComparable) bool {
 	return len(locComp) == 0
 }
 
-func (w *Worker) insertToServer(ctx context.Context, locData []model.LocalPayload) {
+func (w *Worker) insertToServer(
+	ctx context.Context, locData []model.LocalPayload,
+) {
 	const op = "Worker.insertToServer"
 	log := w.logger.WithOp(op)
 
@@ -165,7 +128,9 @@ func (w *Worker) makeIDSyncIDPairs(
 	return s
 }
 
-func (w *Worker) insertToLocal(ctx context.Context, srvData []model.SyncPayload) error {
+func (w *Worker) insertToLocal(
+	ctx context.Context, srvData []model.SyncPayload,
+) error {
 	const op = "Worker.InsertToLocal"
 	log := w.logger.WithOp(op)
 
@@ -201,7 +166,10 @@ func (w *Worker) convertSrvToLoc(
 
 func (w *Worker) makeLocalComparableMaps(
 	locComp []model.LocalComparable,
-) (map[int64]model.LocalComparable, map[string]model.LocalComparable) {
+) (
+	map[int64]model.LocalComparable,
+	map[string]model.LocalComparable,
+) {
 	syncIDModelMap := make(map[int64]model.LocalComparable)
 	nameModelMap := make(map[string]model.LocalComparable)
 
@@ -215,10 +183,14 @@ func (w *Worker) makeLocalComparableMaps(
 	return syncIDModelMap, nameModelMap
 }
 
-func (w *Worker) makeUpdateSlices(
+func (w *Worker) compareForUpdate(
 	srvComp []model.SyncComparable,
 	syncLocalCompMap map[int64]model.LocalComparable,
-) (fromSrv []int64, fromLoc []int64, notSyncYet []model.SyncComparable) {
+) (
+	fromSrv []int64,
+	fromLoc []int64,
+	notSyncYet []model.SyncComparable,
+) {
 	for _, srvObj := range srvComp {
 		if locObj, ok := syncLocalCompMap[srvObj.ID]; ok {
 			switch locObj.UpdatedAt.Compare(srvObj.UpdatedAt) {
@@ -235,32 +207,34 @@ func (w *Worker) makeUpdateSlices(
 	return
 }
 
-func (w *Worker) makeInsertSlices(
+func (w *Worker) compareForInsert(
 	notSyncYet []model.SyncComparable,
-	nameLocalCompMap map[string]model.LocalComparable,
+	newLocalCompMap map[string]model.LocalComparable,
 ) (fromSrv []int64, fromLoc []int64) {
 	for _, srvObj := range notSyncYet {
-		if locObj, ok := nameLocalCompMap[srvObj.Name]; ok {
+		if locObj, ok := newLocalCompMap[srvObj.Name]; ok {
 			switch locObj.UpdatedAt.Compare(srvObj.UpdatedAt) {
 			case -1:
 				fromSrv = append(fromSrv, srvObj.ID)
 			case 1:
 				fromLoc = append(fromLoc, locObj.ID)
 			}
-			delete(nameLocalCompMap, srvObj.Name)
+			delete(newLocalCompMap, srvObj.Name)
 			continue
 		}
 		fromSrv = append(fromSrv, srvObj.ID)
 	}
 
-	for _, locObj := range nameLocalCompMap {
+	for _, locObj := range newLocalCompMap {
 		fromLoc = append(fromLoc, locObj.ID)
 	}
 	slices.Sort(fromLoc)
 	return
 }
 
-func (w *Worker) updateLocal(ctx context.Context, srvData []model.SyncPayload) error {
+func (w *Worker) updateLocal(
+	ctx context.Context, srvData []model.SyncPayload,
+) error {
 	const op = "Worker.updateLocal"
 	log := w.logger.WithOp(op)
 
@@ -271,7 +245,9 @@ func (w *Worker) updateLocal(ctx context.Context, srvData []model.SyncPayload) e
 	return nil
 }
 
-func (w *Worker) updateServer(ctx context.Context, locData []model.LocalPayload) error {
+func (w *Worker) updateServer(
+	ctx context.Context, locData []model.LocalPayload,
+) error {
 	const op = "Worker.updateServer"
 	log := w.logger.WithOp(op)
 
@@ -284,7 +260,9 @@ func (w *Worker) updateServer(ctx context.Context, locData []model.LocalPayload)
 	return nil
 }
 
-func (w *Worker) convertLocToSrv(locData []model.LocalPayload) []model.SyncPayload {
+func (w *Worker) convertLocToSrv(
+	locData []model.LocalPayload,
+) []model.SyncPayload {
 	s := make([]model.SyncPayload, 0, len(locData))
 
 	for _, o := range locData {
@@ -292,4 +270,149 @@ func (w *Worker) convertLocToSrv(locData []model.LocalPayload) []model.SyncPaylo
 		s = append(s, o.SyncPayload)
 	}
 	return s
+}
+
+func (w *Worker) getLocalAll(
+	ctx context.Context,
+) ([]model.LocalPayload, error) {
+	const op = "Worker.getLocalAll"
+	log := w.logger.WithOp(op)
+
+	locData, err := w.local.GetAll(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get all local data")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return locData, nil
+}
+
+func (w *Worker) getServerAll(
+	ctx context.Context,
+) ([]model.SyncPayload, error) {
+	const op = "Worker.getServerAll"
+	log := w.logger.WithOp(op)
+
+	srvData, err := w.server.GetAll(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get all server data")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return srvData, nil
+}
+
+func (w *Worker) getLocalComparable(
+	ctx context.Context,
+) ([]model.LocalComparable, error) {
+	const op = "Worker.getLocalComparable"
+	log := w.logger.WithOp(op)
+
+	locComp, err := w.local.GetComparable(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get local comparable objects")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return locComp, nil
+}
+
+func (w *Worker) getServerComparable(
+	ctx context.Context,
+) ([]model.SyncComparable, error) {
+	const op = "Worker.getServerComparable"
+	log := w.logger.WithOp(op)
+
+	srvComp, err := w.server.GetComparable(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get server comparable objects")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return srvComp, nil
+}
+
+func (w *Worker) getLocalSlice(
+	ctx context.Context, IDs []int64,
+) ([]model.LocalPayload, error) {
+	const op = "Worker.getLocalSlice"
+	log := w.logger.WithOp(op)
+
+	locData, err := w.local.GetSliceByIDs(ctx, IDs)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get local data by IDs")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return locData, nil
+}
+
+func (w *Worker) getServerSlice(
+	ctx context.Context, IDs []int64,
+) ([]model.SyncPayload, error) {
+	const op = "Worker.getLocalSlice"
+	log := w.logger.WithOp(op)
+
+	srvData, err := w.server.GetSliceByIDs(ctx, IDs)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get data from server by IDs")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return srvData, nil
+}
+
+func (w *Worker) handleServerData(
+	ctx context.Context, srvIDs lists,
+) {
+	srvData, err := w.getServerSlice(
+		ctx, append(srvIDs.update, srvIDs.insert...))
+	if err != nil {
+		return
+	}
+
+	updFromSrvSize := len(srvIDs.update)
+
+	updFromSrvData := srvData[:updFromSrvSize]
+	insFromSrvData := srvData[updFromSrvSize:]
+
+	err = w.updateLocal(ctx, updFromSrvData)
+	if err != nil {
+		return
+	}
+
+	w.insertToLocal(ctx, insFromSrvData)
+}
+
+func (w *Worker) handleLocalData(
+	ctx context.Context, locIDs lists,
+) {
+	locData, err := w.getLocalSlice(
+		ctx, append(locIDs.update, locIDs.insert...))
+	if err != nil {
+		return
+	}
+
+	updFromLocSize := len(locIDs.update)
+
+	updFromLocData := locData[:updFromLocSize]
+	insFromLocData := locData[updFromLocSize:]
+
+	err = w.updateServer(ctx, updFromLocData)
+	if err != nil {
+		return
+	}
+
+	w.insertToServer(ctx, insFromLocData)
+}
+
+func (w *Worker) compare(
+	locComp []model.LocalComparable, srvComp []model.SyncComparable,
+) (fromSrvLists, fromLocLists lists) {
+	var notSyncYet []model.SyncComparable
+	syncLocCompMap, newLocCompMap := w.makeLocalComparableMaps(locComp)
+
+	fromSrvLists.update, fromLocLists.update, notSyncYet =
+		w.compareForUpdate(srvComp, syncLocCompMap)
+
+	fromSrvLists.insert, fromLocLists.insert =
+		w.compareForInsert(notSyncYet, newLocCompMap)
+
+	return
 }
