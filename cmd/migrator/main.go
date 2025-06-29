@@ -11,50 +11,10 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func main() {
-	const (
-		storagePathFlag   = "storage-path"
-		migrationPathFlag = "migrations-path"
-	)
-
-	var errs []error
-
-	storagePath := pflag.StringP(storagePathFlag, "s", "", "")
-	migrationsPath := pflag.StringP(migrationPathFlag, "m", "", "")
-	pflag.Parse()
-
-	if *storagePath == "" {
-		errs = append(errs, fmt.Errorf("--%s flag: required", storagePathFlag))
-	}
-
-	if *migrationsPath == "" {
-		errs = append(errs, fmt.Errorf("--%s flag: required", migrationPathFlag))
-	}
-
-	if len(errs) != 0 {
-		panic(errors.Join(errs...))
-	}
-
-	m, err := migrate.New(
-		fmt.Sprintf("file://%s", *migrationsPath),
-		fmt.Sprintf("sqlite3://%s?x-no-tx-wrap=true", *storagePath),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	m.Log = NewMigrationLogger()
-
-	if err := m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
-			m.Log.Printf("no migrations to apply")
-			return
-		}
-		fmt.Printf("error: %#v\n", err)
-		panic(err)
-	}
-	m.Log.Printf("migration applied\n")
-}
+const (
+	storagePathFlag   = "storage-path"
+	migrationPathFlag = "migrations-path"
+)
 
 type MigrationLogger struct {
 	logger  logger.Logger
@@ -72,4 +32,57 @@ func (ml *MigrationLogger) Printf(format string, v ...any) {
 
 func (ml *MigrationLogger) Verbose() bool {
 	return ml.verbose
+}
+
+func main() {
+	logger := NewMigrationLogger()
+	storagePath, migrationsPath := getFlagsValues()
+	validateFlags(logger, storagePath, migrationsPath)
+	makeMigrations(logger, storagePath, migrationsPath)
+}
+
+func getFlagsValues() (storage, migrations string) {
+	storagePath := pflag.StringP(storagePathFlag, "s", "", "")
+	migrationsPath := pflag.StringP(migrationPathFlag, "m", "", "")
+	pflag.Parse()
+	return *storagePath, *migrationsPath
+}
+
+func validateFlags(logger *MigrationLogger, storagePath, migrationsPath string) {
+	var errs []error
+
+	if storagePath == "" {
+		errs = append(errs, fmt.Errorf("--%s flag: required", storagePathFlag))
+	}
+
+	if migrationsPath == "" {
+		errs = append(errs, fmt.Errorf("--%s flag: required", migrationPathFlag))
+	}
+
+	if len(errs) != 0 {
+		logger.logger.Fatal().Err(errors.Join(errs...)).Send()
+	}
+}
+
+func makeMigrations(
+	logger *MigrationLogger, storagePath, migrationsPath string,
+) {
+	m, err := migrate.New(
+		fmt.Sprintf("file://%s", migrationsPath),
+		fmt.Sprintf("sqlite3://%s?x-no-tx-wrap=true", storagePath),
+	)
+	if err != nil {
+		logger.logger.Fatal().Err(err).Send()
+	}
+
+	m.Log = NewMigrationLogger()
+
+	if err := m.Up(); err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			m.Log.Printf("no migrations to apply")
+			return
+		}
+		logger.logger.Fatal().Err(err)
+	}
+	m.Log.Printf("migration applied\n")
 }
