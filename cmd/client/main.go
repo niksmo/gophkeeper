@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	syncTick    = 5 * time.Minute
+	syncTick    = 10 * time.Second
 	authTimeout = 10 * time.Second
 )
 

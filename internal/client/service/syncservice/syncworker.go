@@ -44,7 +44,13 @@ func NewWorker(l logger.Logger, clR LocalRepo, srvR ServerClient) *Worker {
 }
 
 func (w *Worker) DoJob(ctx context.Context, token string) {
-	sync.OnceFunc(func() { w.server.SetToken(token) })
+	const op = "Worker.DoJob"
+	log := w.logger.WithOp(op)
+
+	sync.OnceFunc(func() {
+		log.Debug().Str("token", token).Msg("set token to server client")
+		w.server.SetToken(token)
+	})()
 
 	srvComp, err := w.getServerComparable(ctx)
 	if err != nil {
@@ -52,6 +58,7 @@ func (w *Worker) DoJob(ctx context.Context, token string) {
 	}
 
 	if w.serverNoData(srvComp) {
+		log.Debug().Msg("server no data")
 		locData, err := w.getLocalAll(ctx)
 		if err != nil {
 			return
@@ -66,6 +73,7 @@ func (w *Worker) DoJob(ctx context.Context, token string) {
 	}
 
 	if w.localNoData(locComp) {
+		log.Debug().Msg("no local data")
 		srvData, err := w.getServerAll(ctx)
 		if err != nil {
 			return
@@ -74,7 +82,18 @@ func (w *Worker) DoJob(ctx context.Context, token string) {
 		return
 	}
 
+	log.Debug().Int(
+		"locCompLen", len(locComp)).Int(
+		"srvCompLen", len(srvComp)).Msg(
+		"start compare between local and server")
+
 	srvIDs, locIDs := w.compare(locComp, srvComp)
+
+	log.Debug().Ints64(
+		"insertFromServer", srvIDs.insert).Ints64(
+		"updateFromServer", srvIDs.update).Ints64(
+		"insertFromLocal", locIDs.insert).Ints64(
+		"updateFromLocal", locIDs.update).Msg("compare result")
 
 	go w.handleServerData(ctx, srvIDs)
 	go w.handleLocalData(ctx, locIDs)
@@ -99,11 +118,16 @@ func (w *Worker) insertToServer(
 		return
 	}
 
+	log.Debug().Msg("start insert local data to the server")
+
 	syncIDs, err := w.server.InsertSlice(ctx, locData)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to send local data ot server")
 		return
 	}
+
+	log.Debug().Ints64("syncIDs", syncIDs).Msg(
+		"insert local data to the server successfully")
 
 	if len(syncIDs) != len(locData) {
 		log.Error().Err(err).Int(
@@ -115,10 +139,15 @@ func (w *Worker) insertToServer(
 
 	IDSyncIDPairs := w.makeIDSyncIDPairs(locData, syncIDs)
 
+	log.Debug().Any(
+		"idSyncIDPairs", IDSyncIDPairs).Msg(
+		"start insert syncID to local")
+
 	err = w.local.InsertSliceSyncID(ctx, IDSyncIDPairs)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to insert syncIDs to local data")
 	}
+	log.Debug().Msg("insert syncID successfully")
 }
 
 func (w *Worker) makeIDSyncIDPairs(
@@ -144,11 +173,14 @@ func (w *Worker) insertToLocal(
 
 	insertData := w.convertSrvToLoc(srvData)
 
+	log.Debug().Msg("start insert server data to local")
+
 	err := w.local.InsertSlice(ctx, insertData)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to insert data to local")
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Msg("insert server data successfully")
 	return nil
 }
 
@@ -241,10 +273,17 @@ func (w *Worker) updateLocal(
 	const op = "Worker.updateLocal"
 	log := w.logger.WithOp(op)
 
+	if len(srvData) == 0 {
+		log.Debug().Msg("no data for update local")
+		return nil
+	}
+
+	log.Debug().Msg("start update local data")
 	if err := w.local.UpdateSliceBySyncIDs(ctx, srvData); err != nil {
 		log.Error().Err(err).Msg("failed to update local data")
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Msg("update local successfully")
 	return nil
 }
 
@@ -254,12 +293,20 @@ func (w *Worker) updateServer(
 	const op = "Worker.updateServer"
 	log := w.logger.WithOp(op)
 
+	if len(locData) == 0 {
+		log.Debug().Msg("no data for server update")
+		return nil
+	}
+
 	updateData := w.convertLocToSrv(locData)
+
+	log.Debug().Msg("start update server data")
 	err := w.server.UpdateSliceByIDs(ctx, updateData)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to update server by IDs")
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Msg("update server successfully")
 	return nil
 }
 
@@ -281,11 +328,14 @@ func (w *Worker) getLocalAll(
 	const op = "Worker.getLocalAll"
 	log := w.logger.WithOp(op)
 
+	log.Debug().Msg("start get all local data")
+
 	locData, err := w.local.GetAll(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get all local data")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Int("locDataLen", len(locData)).Msg("get all local data")
 	return locData, nil
 }
 
@@ -295,11 +345,17 @@ func (w *Worker) getServerAll(
 	const op = "Worker.getServerAll"
 	log := w.logger.WithOp(op)
 
+	log.Debug().Msg("start get all from server")
+
 	srvData, err := w.server.GetAll(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get all server data")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
+	log.Debug().Int(
+		"srvDataLen", len(srvData)).Msg(
+		"receive data from server")
 
 	return srvData, nil
 }
@@ -310,11 +366,14 @@ func (w *Worker) getLocalComparable(
 	const op = "Worker.getLocalComparable"
 	log := w.logger.WithOp(op)
 
+	log.Debug().Msg("start get local comparable")
+
 	locComp, err := w.local.GetComparable(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get local comparable objects")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Int("locCompLen", len(locComp)).Msg("get local comparable")
 	return locComp, nil
 }
 
@@ -324,11 +383,16 @@ func (w *Worker) getServerComparable(
 	const op = "Worker.getServerComparable"
 	log := w.logger.WithOp(op)
 
+	log.Debug().Msg("start get comparable from server")
+
 	srvComp, err := w.server.GetComparable(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get server comparable objects")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Int(
+		"srvComLen", len(srvComp)).Msg(
+		"receive comparable from server")
 	return srvComp, nil
 }
 
@@ -338,11 +402,21 @@ func (w *Worker) getLocalSlice(
 	const op = "Worker.getLocalSlice"
 	log := w.logger.WithOp(op)
 
+	if len(IDs) == 0 {
+		log.Debug().Msg("no IDs for get slice from local")
+		return []model.LocalPayload{}, nil
+	}
+
+	log.Debug().Ints64("IDs", IDs).Msg("start get slice from local")
+
 	locData, err := w.local.GetSliceByIDs(ctx, IDs)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get local data by IDs")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Int(
+		"locDataLen", len(locData)).Msg(
+		"get slice from local successfully")
 	return locData, nil
 }
 
@@ -352,11 +426,20 @@ func (w *Worker) getServerSlice(
 	const op = "Worker.getLocalSlice"
 	log := w.logger.WithOp(op)
 
+	if len(IDs) == 0 {
+		log.Debug().Msg("no IDs for get slice from server")
+		return []model.SyncPayload{}, nil
+	}
+
+	log.Debug().Ints64("IDs", IDs).Msg("start get slice from server")
 	srvData, err := w.server.GetSliceByIDs(ctx, IDs)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get data from server by IDs")
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	log.Debug().Int(
+		"srvDataLen", len(srvData)).Msg(
+		"get slice from server successfully")
 
 	return srvData, nil
 }
@@ -364,6 +447,10 @@ func (w *Worker) getServerSlice(
 func (w *Worker) handleServerData(
 	ctx context.Context, srvIDs lists,
 ) {
+	const op = "Worker.handleServerData"
+	log := w.logger.WithOp(op)
+	log.Debug().Msg("start op")
+
 	srvData, err := w.getServerSlice(
 		ctx, append(srvIDs.update, srvIDs.insert...))
 	if err != nil {
@@ -381,11 +468,18 @@ func (w *Worker) handleServerData(
 	}
 
 	w.insertToLocal(ctx, insFromSrvData)
+	log.Debug().Msg("end op")
 }
 
 func (w *Worker) handleLocalData(
 	ctx context.Context, locIDs lists,
 ) {
+	const op = "Worker.handleLocalData"
+
+	log := w.logger.WithOp(op)
+
+	log.Debug().Msg("start op")
+
 	locData, err := w.getLocalSlice(
 		ctx, append(locIDs.update, locIDs.insert...))
 	if err != nil {
@@ -403,6 +497,7 @@ func (w *Worker) handleLocalData(
 	}
 
 	w.insertToServer(ctx, insFromLocData)
+	log.Debug().Msg("end op")
 }
 
 func (w *Worker) compare(

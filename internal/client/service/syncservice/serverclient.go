@@ -51,6 +51,8 @@ func (c *gRPCSyncClient) GetComparable(
 	const op = "gRPCSyncClient.GetComparable"
 	log := c.logger.With().Str("op", op).Str("intity", c.entity).Logger()
 
+	log.Debug().Str("token", c.token).Str("entity", c.entity).Msg("start request")
+
 	req := &usersdatapb.GetComparableRequest{Token: c.token, Entity: c.entity}
 	res, err := c.client.GetComparable(ctx, req)
 	if err != nil {

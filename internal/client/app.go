@@ -27,6 +27,7 @@ import (
 	"github.com/niksmo/gophkeeper/pkg/encode"
 	"github.com/niksmo/gophkeeper/pkg/logger"
 	authbp "github.com/niksmo/gophkeeper/proto/auth"
+	usersdatapb "github.com/niksmo/gophkeeper/proto/usersdata"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -223,12 +224,27 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
+	syncRepo := repository.NewSync(a.log, a.storage)
+	authCs := a.getAuthSubCommands(syncRepo)
+	workers := a.initSyncWorkers()
+
+	syncRunner := syncservice.NewWorkerPool(a.log, syncRepo, workers, a.syncTick)
+	startH := synchandler.NewStart(a.log, syncRunner, os.Stdout)
+	startC := synccommand.NewStart(startH)
+
+	syncC := synccommand.New()
+	syncC.AddCommand(append(authCs, startC)...)
+	return syncC
+}
+
+func (a *App) getAuthSubCommands(
+	syncRepo *repository.SyncRepository,
+) []*command.Command {
 	authClient := authservice.NewGRPCAuthClient(
 		a.log, authbp.NewAuthClient(a.conn), a.authTimeout,
 	)
-	syncRepo := repository.NewSync(a.log, a.storage)
 
-	syncStarter := syncservice.NewSyncRunner(a.log, syncRepo)
+	syncStarter := syncservice.NewSyncExecuter(a.log, syncRepo)
 	userRegistrar := authservice.NewUserRegistrar(a.log, authClient, syncStarter)
 	userAuthorizer := authservice.NewUserAuthorizer(a.log, authClient, syncStarter)
 
@@ -242,11 +258,13 @@ func (a *App) getSyncCommand() *command.Command {
 	logoutH := authhandler.NewLogout(a.log, syncCloser, os.Stdout)
 	logoutC := synccommand.NewLogout(logoutH)
 
-	syncRunner := syncservice.NewWorkerPool(a.log, syncRepo, nil, a.syncTick)
-	startH := synchandler.NewStart(a.log, syncRunner, os.Stdout)
-	startC := synccommand.NewStart(startH)
+	return []*command.Command{signupC, signinC, logoutC}
+}
 
-	syncC := synccommand.New()
-	syncC.AddCommand(signupC, signinC, logoutC, startC)
-	return syncC
+func (a *App) initSyncWorkers() []syncservice.SyncWorker {
+	usersDataClient := usersdatapb.NewUsersDataClient(a.conn)
+	textSyncR := repository.NewTextSync(a.log, a.storage)
+	textClient := syncservice.NewGRPCSyncClientText(a.log, usersDataClient)
+	textWorker := syncservice.NewWorker(a.log, textSyncR, textClient)
+	return []syncservice.SyncWorker{textWorker}
 }

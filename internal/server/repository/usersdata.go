@@ -60,7 +60,7 @@ func (r *UsersDataRepository) GetComparable(
 	defer rows.Close()
 
 	var s []model.SyncComparable
-	if rows.Next() {
+	for rows.Next() {
 		var o model.SyncComparable
 		if err := o.ScanRow(rows); err != nil {
 			log.Error().Err(err).Msg("failed to scan row")

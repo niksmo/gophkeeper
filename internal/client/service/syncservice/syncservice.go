@@ -34,21 +34,21 @@ type SyncRunner struct {
 	repo   SyncRepo
 }
 
-func NewSyncRunner(logger logger.Logger, repo SyncRepo) *SyncRunner {
+func NewSyncExecuter(logger logger.Logger, repo SyncRepo) *SyncRunner {
 	return &SyncRunner{logger, repo}
 }
 
-func (s *SyncRunner) StartSynchronization(
+func (s *SyncRunner) ExecSynchronization(
 	ctx context.Context, token string,
 ) error {
-	const op = "SyncRunner.StartSynchronization"
+	const op = "SyncRunner.ExecSynchronization"
 
-	syncEntry, err := s.getSyncEntry(ctx)
+	syncEntry, err := s.getEntry(ctx)
 	if err != nil {
 		return s.error(op, err)
 	}
 
-	if s.syncNotStopped(syncEntry) {
+	if s.notStopped(syncEntry) {
 		if err = s.verifyAndFix(ctx, syncEntry); err != nil {
 			return s.error(op, err)
 		}
@@ -61,8 +61,8 @@ func (s *SyncRunner) StartSynchronization(
 	return nil
 }
 
-func (s *SyncRunner) getSyncEntry(ctx context.Context) (dto.Sync, error) {
-	const op = "SyncRunner.getSyncEntry"
+func (s *SyncRunner) getEntry(ctx context.Context) (dto.Sync, error) {
+	const op = "SyncRunner.getEntry"
 	log := s.logger.WithOp(op)
 
 	syncEntry, err := s.repo.ReadLast(ctx)
@@ -90,9 +90,12 @@ func (s *SyncRunner) execCommand(ctx context.Context, token string) error {
 		return err
 	}
 
+	log.Debug().Str("token", token).Msg("exec sync start")
+
 	pid := cmd.Process.Pid
 	if _, err := s.repo.Create(ctx, pid, time.Now()); err != nil {
 		log.Debug().Err(err).Msg("failed to create synchronization entry")
+		cmd.Process.Signal(syscall.Signal(0))
 		return err
 	}
 
@@ -100,7 +103,7 @@ func (s *SyncRunner) execCommand(ctx context.Context, token string) error {
 	return nil
 }
 
-func (s *SyncRunner) syncNotStopped(syncDTO dto.Sync) bool {
+func (s *SyncRunner) notStopped(syncDTO dto.Sync) bool {
 	return syncDTO.StoppedAt == nil
 }
 

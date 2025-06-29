@@ -28,8 +28,8 @@ type (
 		AuthorizeUser(ctx context.Context, login, password string) (token string, err error)
 	}
 
-	SyncStarter interface {
-		StartSynchronization(ctx context.Context, token string) error
+	SyncExecuter interface {
+		ExecSynchronization(ctx context.Context, token string) error
 	}
 )
 
@@ -146,11 +146,11 @@ func (c *gRPCAuthClient) handleAuthorizationErr(err error) error {
 type UserRegistrar struct {
 	logger      logger.Logger
 	authClient  AuthClient
-	syncStarter SyncStarter
+	syncStarter SyncExecuter
 }
 
 func NewUserRegistrar(
-	logger logger.Logger, authClient AuthClient, syncStarter SyncStarter,
+	logger logger.Logger, authClient AuthClient, syncStarter SyncExecuter,
 ) *UserRegistrar {
 	return &UserRegistrar{logger, authClient, syncStarter}
 }
@@ -198,11 +198,11 @@ func (r *UserRegistrar) error(op string, err error) error {
 type UserAuthorizer struct {
 	logger      logger.Logger
 	authClient  AuthClient
-	syncStarter SyncStarter
+	syncStarter SyncExecuter
 }
 
 func NewUserAuthorizer(
-	logger logger.Logger, authClient AuthClient, syncStarter SyncStarter,
+	logger logger.Logger, authClient AuthClient, syncStarter SyncExecuter,
 ) *UserAuthorizer {
 	return &UserAuthorizer{logger, authClient, syncStarter}
 }
@@ -245,9 +245,9 @@ func (a *UserAuthorizer) error(op string, err error) error {
 }
 
 func startSynchronization(
-	ctx context.Context, log logger.Logger, ss SyncStarter, token string,
+	ctx context.Context, log logger.Logger, ss SyncExecuter, token string,
 ) error {
-	err := ss.StartSynchronization(ctx, token)
+	err := ss.ExecSynchronization(ctx, token)
 	if err != nil {
 		if errors.Is(err, syncservice.ErrPIDConflict) {
 			log.Debug().Err(err).Msg("synchronization is already running")

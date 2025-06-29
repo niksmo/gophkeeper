@@ -82,5 +82,5 @@ func (e UserIDInterceptor) getUserID(token string) (int, error) {
 }
 
 func (e UserIDInterceptor) updateContext(ctx context.Context, userID int) context.Context {
-	return context.WithValue(ctx, UserIDKey, userID)
+	return context.WithValue(ctx, UserIDKey, UserID(userID))
 }
