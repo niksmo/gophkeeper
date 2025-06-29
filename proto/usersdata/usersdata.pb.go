@@ -713,8 +713,8 @@ const file_proto_usersdata_proto_rawDesc = "" +
 	"\x06Entity\x18\x02 \x01(\tR\x06Entity\x12&\n" +
 	"\x04Data\x18\x03 \x03(\v2\x12.usersdata.PayloadR\x04Data\"'\n" +
 	"\x13InsertSliceResponse\x12\x10\n" +
-	"\x03IDs\x18\x01 \x03(\x03R\x03IDs2\x98\x03\n" +
-	"\x18UsersDataSynchronization\x12T\n" +
+	"\x03IDs\x18\x01 \x03(\x03R\x03IDs2\x89\x03\n" +
+	"\tUsersData\x12T\n" +
 	"\rGetComparable\x12\x1f.usersdata.GetComparableRequest\x1a .usersdata.GetComparableResponse\"\x00\x12?\n" +
 	"\x06GetAll\x12\x18.usersdata.GetAllRequest\x1a\x19.usersdata.GetAllResponse\"\x00\x12E\n" +
 	"\bGetSlice\x12\x1a.usersdata.GetSliceRequest\x1a\x1b.usersdata.GetSliceResponse\"\x00\x12N\n" +
@@ -754,16 +754,16 @@ var file_proto_usersdata_proto_depIdxs = []int32{
 	1,  // 2: usersdata.GetSliceResponse.Data:type_name -> usersdata.Payload
 	1,  // 3: usersdata.UpdateSliceRequest.Data:type_name -> usersdata.Payload
 	1,  // 4: usersdata.InsertSliceRequest.Data:type_name -> usersdata.Payload
-	2,  // 5: usersdata.UsersDataSynchronization.GetComparable:input_type -> usersdata.GetComparableRequest
-	4,  // 6: usersdata.UsersDataSynchronization.GetAll:input_type -> usersdata.GetAllRequest
-	6,  // 7: usersdata.UsersDataSynchronization.GetSlice:input_type -> usersdata.GetSliceRequest
-	8,  // 8: usersdata.UsersDataSynchronization.UpdateSlice:input_type -> usersdata.UpdateSliceRequest
-	10, // 9: usersdata.UsersDataSynchronization.InsertSlice:input_type -> usersdata.InsertSliceRequest
-	3,  // 10: usersdata.UsersDataSynchronization.GetComparable:output_type -> usersdata.GetComparableResponse
-	5,  // 11: usersdata.UsersDataSynchronization.GetAll:output_type -> usersdata.GetAllResponse
-	7,  // 12: usersdata.UsersDataSynchronization.GetSlice:output_type -> usersdata.GetSliceResponse
-	9,  // 13: usersdata.UsersDataSynchronization.UpdateSlice:output_type -> usersdata.UpdateSliceResponse
-	11, // 14: usersdata.UsersDataSynchronization.InsertSlice:output_type -> usersdata.InsertSliceResponse
+	2,  // 5: usersdata.UsersData.GetComparable:input_type -> usersdata.GetComparableRequest
+	4,  // 6: usersdata.UsersData.GetAll:input_type -> usersdata.GetAllRequest
+	6,  // 7: usersdata.UsersData.GetSlice:input_type -> usersdata.GetSliceRequest
+	8,  // 8: usersdata.UsersData.UpdateSlice:input_type -> usersdata.UpdateSliceRequest
+	10, // 9: usersdata.UsersData.InsertSlice:input_type -> usersdata.InsertSliceRequest
+	3,  // 10: usersdata.UsersData.GetComparable:output_type -> usersdata.GetComparableResponse
+	5,  // 11: usersdata.UsersData.GetAll:output_type -> usersdata.GetAllResponse
+	7,  // 12: usersdata.UsersData.GetSlice:output_type -> usersdata.GetSliceResponse
+	9,  // 13: usersdata.UsersData.UpdateSlice:output_type -> usersdata.UpdateSliceResponse
+	11, // 14: usersdata.UsersData.InsertSlice:output_type -> usersdata.InsertSliceResponse
 	10, // [10:15] is the sub-list for method output_type
 	5,  // [5:10] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name

@@ -57,7 +57,7 @@ func (h *authHandler) RegisterUser(
 			)
 		}
 		log.Error().Err(err).Msg("internal errror")
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, ErrInternal
 	}
 
 	return &authpb.RegUserResponse{Token: token}, nil
@@ -83,7 +83,7 @@ func (h *authHandler) AuthorizeUser(
 			)
 		}
 		log.Error().Err(err).Msg("internal error")
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, ErrInternal
 
 	}
 

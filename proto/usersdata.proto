@@ -4,7 +4,7 @@ package usersdata;
 
 option go_package = "github.com/niksmo/gophkeeper/proto/usersdata;usersdatapb";
 
-service UsersDataSynchronization {
+service UsersData {
   rpc GetComparable (GetComparableRequest) returns (GetComparableResponse) {};
   rpc GetAll(GetAllRequest) returns (GetAllResponse) {};
   rpc GetSlice(GetSliceRequest) returns (GetSliceResponse) {};

@@ -9,6 +9,7 @@ import (
 	"github.com/niksmo/gophkeeper/internal/server/repository"
 	"github.com/niksmo/gophkeeper/internal/server/service/authservice"
 	"github.com/niksmo/gophkeeper/internal/server/service/tokenservice"
+	"github.com/niksmo/gophkeeper/internal/server/service/usersdataservice"
 	"github.com/niksmo/gophkeeper/internal/server/storage"
 	"github.com/niksmo/gophkeeper/pkg/hasher"
 	"github.com/niksmo/gophkeeper/pkg/logger"
@@ -31,80 +32,94 @@ func New(config *config.Config) *App {
 	return app
 }
 
-func (app *App) initLogger() {
-	app.logger = logger.New(app.config.LogLevel)
-	app.logger.Info().Str("init", "logger").Str(
-		"level", app.config.LogLevel,
+func (a *App) initLogger() {
+	a.logger = logger.New(a.config.LogLevel)
+	a.logger.Info().Str("init", "logger").Str(
+		"level", a.config.LogLevel,
 	).Send()
 }
 
-func (app *App) initStorage() {
-	app.storage = storage.New(app.logger, app.config.DSN)
-	app.logger.Info().Str("init", "storage").Str(
-		"dns", app.config.DSN,
+func (a *App) initStorage() {
+	a.storage = storage.New(a.logger, a.config.DSN)
+	a.logger.Info().Str("init", "storage").Str(
+		"dns", a.config.DSN,
 	).Send()
 }
 
-func (app *App) initGRPCServer() {
-	app.gRPCServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(interceptors.WithLog(app.logger)),
+func (a *App) initGRPCServer() {
+	tokenVerifier := tokenservice.NewUsersTokenVerifier(
+		a.logger, a.config.TokenSecret,
 	)
-	app.logger.Info().Str("init", "gRPCServer").Str(
-		"addr", app.config.TCPAddr.String(),
+	userIDInterceptor := interceptors.NewUseIDInterceptor(
+		a.logger, tokenVerifier,
+	)
+	a.gRPCServer = grpc.NewServer(grpc.ChainUnaryInterceptor(
+		interceptors.WithRecovery(a.logger),
+		interceptors.WithLog(a.logger),
+		interceptors.WithUser(userIDInterceptor),
+	))
+	a.logger.Info().Str("init", "gRPCServer").Str(
+		"addr", a.config.TCPAddr.String(),
 	).Send()
 }
 
-func (app *App) registerServices() {
-	cryptoHasher := hasher.NewCryptoHasher(app.config.HashCost)
+func (a *App) registerServices() {
+	cryptoHasher := hasher.NewCryptoHasher(a.config.HashCost)
 	userTP := tokenservice.NewUsersTokenProvider(
-		app.logger, app.config.TokenSecret, app.config.TokenTTL,
+		a.logger, a.config.TokenSecret, a.config.TokenTTL,
 	)
-	usersR := repository.NewUsersRepository(app.logger, app.storage)
+	usersR := repository.NewUsersRepository(a.logger, a.storage)
 	authS := authservice.New(
 		authservice.ServiceDeps{
-			Logger:        app.logger,
+			Logger:        a.logger,
 			Hasher:        cryptoHasher,
 			UserCreator:   usersR,
 			UserProvider:  usersR,
 			TokenProvider: userTP,
 		},
 	)
-	api.RegisterAuthAPI(app.logger, app.gRPCServer, authS)
-	app.logger.Info().Str("register", "AuthService").Send()
+	api.RegisterAuthAPI(a.logger, a.gRPCServer, authS)
+	a.logger.Info().Str("register", "AuthService").Send()
+
+	usersDataR := repository.NewUsersDataRepository(a.logger, a.storage)
+	usersDataS := usersdataservice.New(a.logger, usersDataR)
+
+	api.RegisterUsersDataSyncAPI(a.logger, a.gRPCServer, usersDataS)
+	a.logger.Info().Str("register", "UsersDataSynchronizationService").Send()
 }
 
-func (app *App) MustRun() {
+func (a *App) MustRun() {
 	const op = "App.MustRun"
 
-	log := app.logger.With().Str("op", op).Logger()
+	log := a.logger.With().Str("op", op).Logger()
 
-	lis, err := net.ListenTCP("tcp", app.config.TCPAddr)
+	lis, err := net.ListenTCP("tcp", a.config.TCPAddr)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to listen tcp address")
-		app.Stop()
+		a.Stop()
 	}
 
 	log.Info().Msg("gRPC server started")
 
-	err = app.gRPCServer.Serve(lis)
+	err = a.gRPCServer.Serve(lis)
 	if err != nil {
 		log.Error().Err(err).Msg("gRPC server serve error")
-		app.Stop()
+		a.Stop()
 	}
 }
 
-func (app *App) Stop() {
+func (a *App) Stop() {
 	const op = "App.Stop"
-	log := app.logger.With().Str("op", op).Logger()
+	log := a.logger.With().Str("op", op).Logger()
 
 	log.Info().Msg("stopping application")
 
 	log.Info().Msg("gRPC server closing")
-	app.gRPCServer.GracefulStop()
+	a.gRPCServer.GracefulStop()
 	log.Info().Msg("gRPC server closed successfully")
 
 	log.Info().Msg("storage closing")
-	if err := app.storage.Close(); err != nil {
+	if err := a.storage.Close(); err != nil {
 		log.Info().Err(err).Msg("storage closed with errors")
 	} else {
 		log.Info().Msg("storage closed successfully")

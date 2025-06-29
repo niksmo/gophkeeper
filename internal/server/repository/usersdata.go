@@ -95,7 +95,7 @@ func (r *UsersDataRepository) GetAll(
 }
 
 func (r *UsersDataRepository) GetSliceByIDs(
-	ctx context.Context, t Table, userID int, sID []int64,
+	ctx context.Context, t Table, userID int, IDs []int64,
 ) ([]model.SyncPayload, error) {
 	const op = "UsersDataRepository.GetSliceByIDs"
 	log := r.logger.WithOp(op)
@@ -104,7 +104,7 @@ func (r *UsersDataRepository) GetSliceByIDs(
 		SELECT id, name, data, created_at, updated_at, deleted, sync_id
 		FROM %s
 		WHERE user_id=? AND id IN (%s);`,
-		t, r.makeStrIDList(sID),
+		t, r.makeStrIDList(IDs),
 	)
 
 	return r.querySlice(ctx, log, op, stmt, userID)

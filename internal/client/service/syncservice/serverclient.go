@@ -12,31 +12,31 @@ import (
 
 type gRPCSyncClient struct {
 	logger logger.Logger
-	client usersdatapb.UsersDataSynchronizationClient
+	client usersdatapb.UsersDataClient
 	entity string
 	token  string
 }
 
 func NewGRPCSyncClientPwd(
-	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
+	l logger.Logger, c usersdatapb.UsersDataClient,
 ) ServerClient {
 	return &gRPCSyncClient{logger: l, client: c, entity: "passwords"}
 }
 
 func NewGRPCSyncClientCard(
-	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
+	l logger.Logger, c usersdatapb.UsersDataClient,
 ) ServerClient {
 	return &gRPCSyncClient{logger: l, client: c, entity: "cards"}
 }
 
 func NewGRPCSyncClientBin(
-	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
+	l logger.Logger, c usersdatapb.UsersDataClient,
 ) ServerClient {
 	return &gRPCSyncClient{logger: l, client: c, entity: "binaries"}
 }
 
 func NewGRPCSyncClientText(
-	l logger.Logger, c usersdatapb.UsersDataSynchronizationClient,
+	l logger.Logger, c usersdatapb.UsersDataClient,
 ) ServerClient {
 	return &gRPCSyncClient{logger: l, client: c, entity: "texts"}
 }

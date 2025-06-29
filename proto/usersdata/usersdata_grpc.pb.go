@@ -19,17 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UsersDataSynchronization_GetComparable_FullMethodName = "/usersdata.UsersDataSynchronization/GetComparable"
-	UsersDataSynchronization_GetAll_FullMethodName        = "/usersdata.UsersDataSynchronization/GetAll"
-	UsersDataSynchronization_GetSlice_FullMethodName      = "/usersdata.UsersDataSynchronization/GetSlice"
-	UsersDataSynchronization_UpdateSlice_FullMethodName   = "/usersdata.UsersDataSynchronization/UpdateSlice"
-	UsersDataSynchronization_InsertSlice_FullMethodName   = "/usersdata.UsersDataSynchronization/InsertSlice"
+	UsersData_GetComparable_FullMethodName = "/usersdata.UsersData/GetComparable"
+	UsersData_GetAll_FullMethodName        = "/usersdata.UsersData/GetAll"
+	UsersData_GetSlice_FullMethodName      = "/usersdata.UsersData/GetSlice"
+	UsersData_UpdateSlice_FullMethodName   = "/usersdata.UsersData/UpdateSlice"
+	UsersData_InsertSlice_FullMethodName   = "/usersdata.UsersData/InsertSlice"
 )
 
-// UsersDataSynchronizationClient is the client API for UsersDataSynchronization service.
+// UsersDataClient is the client API for UsersData service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type UsersDataSynchronizationClient interface {
+type UsersDataClient interface {
 	GetComparable(ctx context.Context, in *GetComparableRequest, opts ...grpc.CallOption) (*GetComparableResponse, error)
 	GetAll(ctx context.Context, in *GetAllRequest, opts ...grpc.CallOption) (*GetAllResponse, error)
 	GetSlice(ctx context.Context, in *GetSliceRequest, opts ...grpc.CallOption) (*GetSliceResponse, error)
@@ -37,236 +37,235 @@ type UsersDataSynchronizationClient interface {
 	InsertSlice(ctx context.Context, in *InsertSliceRequest, opts ...grpc.CallOption) (*InsertSliceResponse, error)
 }
 
-type usersDataSynchronizationClient struct {
+type usersDataClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewUsersDataSynchronizationClient(cc grpc.ClientConnInterface) UsersDataSynchronizationClient {
-	return &usersDataSynchronizationClient{cc}
+func NewUsersDataClient(cc grpc.ClientConnInterface) UsersDataClient {
+	return &usersDataClient{cc}
 }
 
-func (c *usersDataSynchronizationClient) GetComparable(ctx context.Context, in *GetComparableRequest, opts ...grpc.CallOption) (*GetComparableResponse, error) {
+func (c *usersDataClient) GetComparable(ctx context.Context, in *GetComparableRequest, opts ...grpc.CallOption) (*GetComparableResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetComparableResponse)
-	err := c.cc.Invoke(ctx, UsersDataSynchronization_GetComparable_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UsersData_GetComparable_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersDataSynchronizationClient) GetAll(ctx context.Context, in *GetAllRequest, opts ...grpc.CallOption) (*GetAllResponse, error) {
+func (c *usersDataClient) GetAll(ctx context.Context, in *GetAllRequest, opts ...grpc.CallOption) (*GetAllResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAllResponse)
-	err := c.cc.Invoke(ctx, UsersDataSynchronization_GetAll_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UsersData_GetAll_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersDataSynchronizationClient) GetSlice(ctx context.Context, in *GetSliceRequest, opts ...grpc.CallOption) (*GetSliceResponse, error) {
+func (c *usersDataClient) GetSlice(ctx context.Context, in *GetSliceRequest, opts ...grpc.CallOption) (*GetSliceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSliceResponse)
-	err := c.cc.Invoke(ctx, UsersDataSynchronization_GetSlice_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UsersData_GetSlice_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersDataSynchronizationClient) UpdateSlice(ctx context.Context, in *UpdateSliceRequest, opts ...grpc.CallOption) (*UpdateSliceResponse, error) {
+func (c *usersDataClient) UpdateSlice(ctx context.Context, in *UpdateSliceRequest, opts ...grpc.CallOption) (*UpdateSliceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateSliceResponse)
-	err := c.cc.Invoke(ctx, UsersDataSynchronization_UpdateSlice_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UsersData_UpdateSlice_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersDataSynchronizationClient) InsertSlice(ctx context.Context, in *InsertSliceRequest, opts ...grpc.CallOption) (*InsertSliceResponse, error) {
+func (c *usersDataClient) InsertSlice(ctx context.Context, in *InsertSliceRequest, opts ...grpc.CallOption) (*InsertSliceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(InsertSliceResponse)
-	err := c.cc.Invoke(ctx, UsersDataSynchronization_InsertSlice_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UsersData_InsertSlice_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// UsersDataSynchronizationServer is the server API for UsersDataSynchronization service.
-// All implementations must embed UnimplementedUsersDataSynchronizationServer
+// UsersDataServer is the server API for UsersData service.
+// All implementations must embed UnimplementedUsersDataServer
 // for forward compatibility.
-type UsersDataSynchronizationServer interface {
+type UsersDataServer interface {
 	GetComparable(context.Context, *GetComparableRequest) (*GetComparableResponse, error)
 	GetAll(context.Context, *GetAllRequest) (*GetAllResponse, error)
 	GetSlice(context.Context, *GetSliceRequest) (*GetSliceResponse, error)
 	UpdateSlice(context.Context, *UpdateSliceRequest) (*UpdateSliceResponse, error)
 	InsertSlice(context.Context, *InsertSliceRequest) (*InsertSliceResponse, error)
-	mustEmbedUnimplementedUsersDataSynchronizationServer()
+	mustEmbedUnimplementedUsersDataServer()
 }
 
-// UnimplementedUsersDataSynchronizationServer must be embedded to have
+// UnimplementedUsersDataServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedUsersDataSynchronizationServer struct{}
+type UnimplementedUsersDataServer struct{}
 
-func (UnimplementedUsersDataSynchronizationServer) GetComparable(context.Context, *GetComparableRequest) (*GetComparableResponse, error) {
+func (UnimplementedUsersDataServer) GetComparable(context.Context, *GetComparableRequest) (*GetComparableResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetComparable not implemented")
 }
-func (UnimplementedUsersDataSynchronizationServer) GetAll(context.Context, *GetAllRequest) (*GetAllResponse, error) {
+func (UnimplementedUsersDataServer) GetAll(context.Context, *GetAllRequest) (*GetAllResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
 }
-func (UnimplementedUsersDataSynchronizationServer) GetSlice(context.Context, *GetSliceRequest) (*GetSliceResponse, error) {
+func (UnimplementedUsersDataServer) GetSlice(context.Context, *GetSliceRequest) (*GetSliceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSlice not implemented")
 }
-func (UnimplementedUsersDataSynchronizationServer) UpdateSlice(context.Context, *UpdateSliceRequest) (*UpdateSliceResponse, error) {
+func (UnimplementedUsersDataServer) UpdateSlice(context.Context, *UpdateSliceRequest) (*UpdateSliceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSlice not implemented")
 }
-func (UnimplementedUsersDataSynchronizationServer) InsertSlice(context.Context, *InsertSliceRequest) (*InsertSliceResponse, error) {
+func (UnimplementedUsersDataServer) InsertSlice(context.Context, *InsertSliceRequest) (*InsertSliceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InsertSlice not implemented")
 }
-func (UnimplementedUsersDataSynchronizationServer) mustEmbedUnimplementedUsersDataSynchronizationServer() {
-}
-func (UnimplementedUsersDataSynchronizationServer) testEmbeddedByValue() {}
+func (UnimplementedUsersDataServer) mustEmbedUnimplementedUsersDataServer() {}
+func (UnimplementedUsersDataServer) testEmbeddedByValue()                   {}
 
-// UnsafeUsersDataSynchronizationServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to UsersDataSynchronizationServer will
+// UnsafeUsersDataServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to UsersDataServer will
 // result in compilation errors.
-type UnsafeUsersDataSynchronizationServer interface {
-	mustEmbedUnimplementedUsersDataSynchronizationServer()
+type UnsafeUsersDataServer interface {
+	mustEmbedUnimplementedUsersDataServer()
 }
 
-func RegisterUsersDataSynchronizationServer(s grpc.ServiceRegistrar, srv UsersDataSynchronizationServer) {
-	// If the following call pancis, it indicates UnimplementedUsersDataSynchronizationServer was
+func RegisterUsersDataServer(s grpc.ServiceRegistrar, srv UsersDataServer) {
+	// If the following call pancis, it indicates UnimplementedUsersDataServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&UsersDataSynchronization_ServiceDesc, srv)
+	s.RegisterService(&UsersData_ServiceDesc, srv)
 }
 
-func _UsersDataSynchronization_GetComparable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersData_GetComparable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetComparableRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersDataSynchronizationServer).GetComparable(ctx, in)
+		return srv.(UsersDataServer).GetComparable(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UsersDataSynchronization_GetComparable_FullMethodName,
+		FullMethod: UsersData_GetComparable_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersDataSynchronizationServer).GetComparable(ctx, req.(*GetComparableRequest))
+		return srv.(UsersDataServer).GetComparable(ctx, req.(*GetComparableRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UsersDataSynchronization_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersData_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAllRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersDataSynchronizationServer).GetAll(ctx, in)
+		return srv.(UsersDataServer).GetAll(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UsersDataSynchronization_GetAll_FullMethodName,
+		FullMethod: UsersData_GetAll_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersDataSynchronizationServer).GetAll(ctx, req.(*GetAllRequest))
+		return srv.(UsersDataServer).GetAll(ctx, req.(*GetAllRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UsersDataSynchronization_GetSlice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersData_GetSlice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetSliceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersDataSynchronizationServer).GetSlice(ctx, in)
+		return srv.(UsersDataServer).GetSlice(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UsersDataSynchronization_GetSlice_FullMethodName,
+		FullMethod: UsersData_GetSlice_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersDataSynchronizationServer).GetSlice(ctx, req.(*GetSliceRequest))
+		return srv.(UsersDataServer).GetSlice(ctx, req.(*GetSliceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UsersDataSynchronization_UpdateSlice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersData_UpdateSlice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateSliceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersDataSynchronizationServer).UpdateSlice(ctx, in)
+		return srv.(UsersDataServer).UpdateSlice(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UsersDataSynchronization_UpdateSlice_FullMethodName,
+		FullMethod: UsersData_UpdateSlice_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersDataSynchronizationServer).UpdateSlice(ctx, req.(*UpdateSliceRequest))
+		return srv.(UsersDataServer).UpdateSlice(ctx, req.(*UpdateSliceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UsersDataSynchronization_InsertSlice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersData_InsertSlice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InsertSliceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersDataSynchronizationServer).InsertSlice(ctx, in)
+		return srv.(UsersDataServer).InsertSlice(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UsersDataSynchronization_InsertSlice_FullMethodName,
+		FullMethod: UsersData_InsertSlice_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersDataSynchronizationServer).InsertSlice(ctx, req.(*InsertSliceRequest))
+		return srv.(UsersDataServer).InsertSlice(ctx, req.(*InsertSliceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// UsersDataSynchronization_ServiceDesc is the grpc.ServiceDesc for UsersDataSynchronization service.
+// UsersData_ServiceDesc is the grpc.ServiceDesc for UsersData service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var UsersDataSynchronization_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "usersdata.UsersDataSynchronization",
-	HandlerType: (*UsersDataSynchronizationServer)(nil),
+var UsersData_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "usersdata.UsersData",
+	HandlerType: (*UsersDataServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "GetComparable",
-			Handler:    _UsersDataSynchronization_GetComparable_Handler,
+			Handler:    _UsersData_GetComparable_Handler,
 		},
 		{
 			MethodName: "GetAll",
-			Handler:    _UsersDataSynchronization_GetAll_Handler,
+			Handler:    _UsersData_GetAll_Handler,
 		},
 		{
 			MethodName: "GetSlice",
-			Handler:    _UsersDataSynchronization_GetSlice_Handler,
+			Handler:    _UsersData_GetSlice_Handler,
 		},
 		{
 			MethodName: "UpdateSlice",
-			Handler:    _UsersDataSynchronization_UpdateSlice_Handler,
+			Handler:    _UsersData_UpdateSlice_Handler,
 		},
 		{
 			MethodName: "InsertSlice",
-			Handler:    _UsersDataSynchronization_InsertSlice_Handler,
+			Handler:    _UsersData_InsertSlice_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
