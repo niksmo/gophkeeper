@@ -34,7 +34,7 @@ const (
 	expDateUsage   = "bank card validity period e.g. 12/2025 (required)"
 
 	holderNameDefault = ""
-	hoderNameUsage    = "cardhodler name on the bank card (required)"
+	holderNameUsage   = "cardhodler name on the bank card (required)"
 )
 
 func New() *command.Command {
@@ -74,7 +74,7 @@ func NewAdd(h command.GenCmdHandler[AddCmdFlags]) *command.Command {
 		ExpDateFlag, expDateDefault, expDateUsage)
 
 	flagSet.StringVar(&fv.Holder,
-		HolderNameFlag, holderNameDefault, hoderNameUsage)
+		HolderNameFlag, holderNameDefault, holderNameUsage)
 
 	c.MarkFlagRequired(SecretKeyFlag)
 	c.MarkFlagRequired(NameFlag)
@@ -117,7 +117,7 @@ func NewEdit(h command.GenCmdHandler[EditCmdFlags]) *command.Command {
 		ExpDateFlag, expDateDefault, expDateUsage)
 
 	flagSet.StringVar(&fv.Holder,
-		HolderNameFlag, holderNameDefault, hoderNameUsage)
+		HolderNameFlag, holderNameDefault, holderNameUsage)
 
 	c.MarkFlagRequired(SecretKeyFlag)
 	c.MarkFlagRequired(EntryNumFlag)

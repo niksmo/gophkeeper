@@ -14,6 +14,7 @@ const (
 	authTimeout = 10 * time.Second
 )
 
+// LDFLAGS variables
 var (
 	LogLevel   = "debug"
 	DSN        = ".gophkeeper.db"
@@ -28,7 +29,12 @@ func main() {
 	)
 	defer stopFn()
 
-	opt := client.Opt{
+	app := client.New(loadConfig())
+	app.Run(stopCtx)
+}
+
+func loadConfig() client.Opt {
+	return client.Opt{
 		LogLevel:    LogLevel,
 		DSN:         DSN,
 		ServerAddr:  ServerAddr,
@@ -37,7 +43,4 @@ func main() {
 		SyncTick:    syncTick,
 		AuthTimeout: authTimeout,
 	}
-
-	app := client.New(opt)
-	app.Run(stopCtx)
 }
