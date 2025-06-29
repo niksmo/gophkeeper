@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package usersdata;
+
+option go_package = "github.com/niksmo/gophkeeper/proto/usersdata;usersdatapb";
+
+service UsersData {
+  rpc GetComparable (GetComparableRequest) returns (GetComparableResponse) {};
+  rpc GetAll(GetAllRequest) returns (GetAllResponse) {};
+  rpc GetSlice(GetSliceRequest) returns (GetSliceResponse) {};
+  rpc UpdateSlice(UpdateSliceRequest) returns (UpdateSliceResponse) {};
+  rpc InsertSlice(InsertSliceRequest) returns (InsertSliceResponse) {};
+}
+
+message Comparable {
+    int64 ID = 1;
+    string Name = 2;
+    int64 UpdatedAt = 3;
+}
+
+message Payload {
+    int64 ID = 1;
+    string Name = 2;
+    bytes Data = 3;
+    int64 CreatedAt = 4;
+    int64 UpdatedAt = 5;
+    bool Deleted = 6;
+}
+
+message GetComparableRequest {
+    string Token = 1;
+    string Entity = 2;
+}
+
+message GetComparableResponse {
+    repeated Comparable Data = 1;
+}
+
+message GetAllRequest {
+    string Token = 1;
+    string Entity = 2;
+}
+
+message GetAllResponse {
+    repeated Payload Data = 1;
+}
+
+message GetSliceRequest {
+    string Token = 1;
+    string Entity = 2;
+    repeated int64 IDs = 3;
+}
+
+message GetSliceResponse {
+    repeated Payload Data = 1;
+}
+
+message UpdateSliceRequest {
+    string Token = 1;
+    string Entity = 2;
+    repeated Payload Data = 3;
+}
+
+message UpdateSliceResponse {
+    bool ok = 1;
+}
+
+message InsertSliceRequest {
+    string Token = 1;
+    string Entity = 2;
+    repeated Payload Data = 3;
+}
+
+message InsertSliceResponse {
+    repeated int64 IDs = 1;
+}

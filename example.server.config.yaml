@@ -1,0 +1,21 @@
+# Example server config
+
+# Server address
+TCPAddr: "127.0.0.1:8000"
+
+# Log level
+LogLevel: "debug"
+
+# sqlite3 database DSN
+DSN: ".server.db"
+
+# Users password hashing cost min 4 max 31
+# WARN! Don't use example value in production!
+HashCost: 4
+
+# Token secret for signing
+# WARN! Don't use example value in production!
+TokenSecret: "testSecretNotForProduction"
+
+# Token lifetime in hours
+TokenTTL: 5
