@@ -7,6 +7,6 @@ type (
 
 	encrypter interface {
 		SetKey(string)
-		Encrypt([]byte) []byte
+		Encrypt([]byte) ([]byte, error)
 	}
 )

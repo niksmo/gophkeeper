@@ -30,7 +30,7 @@ func TestEncrypter(t *testing.T) {
 
 	e := cipher.NewEncrypter()
 	e.SetKey(getRandPwd(100))
-	encryptedData := e.Encrypt(data)
+	encryptedData, _ := e.Encrypt(data)
 	require.NotEqual(t, data, encryptedData)
 }
 
@@ -41,7 +41,7 @@ func TestDecrypter(t *testing.T) {
 
 		e := cipher.NewEncrypter()
 		e.SetKey(password)
-		encryptedData := e.Encrypt(data)
+		encryptedData, _ := e.Encrypt(data)
 		require.NotEqual(t, data, encryptedData)
 
 		d := cipher.NewDecrypter()
@@ -56,7 +56,7 @@ func TestDecrypter(t *testing.T) {
 
 		e := cipher.NewEncrypter()
 		e.SetKey(getRandPwd(100))
-		encryptedData := e.Encrypt(data)
+		encryptedData, _ := e.Encrypt(data)
 		require.NotEqual(t, data, encryptedData)
 
 		d := cipher.NewDecrypter()

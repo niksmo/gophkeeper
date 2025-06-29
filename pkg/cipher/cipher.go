@@ -15,31 +15,29 @@ const (
 )
 
 type Encrypter struct {
-	k string
+	keySetter
 }
 
 func NewEncrypter() *Encrypter {
 	return &Encrypter{}
 }
 
-func (e *Encrypter) SetKey(k string) {
-	e.k = k
-}
+func (e *Encrypter) Encrypt(data []byte) ([]byte, error) {
+	const op = "Encrypter.Encrypt"
 
-func (e *Encrypter) Encrypt(data []byte) []byte {
-	key, err := makeKey(e.k)
+	key, err := makeKey(e.Key)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	aead, err := makeAEAD(key)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	nonce := e.getNonce(aead.NonceSize())
 
-	return aead.Seal(nonce, nonce, data, nil)
+	return aead.Seal(nonce, nonce, data, nil), nil
 }
 
 func (e *Encrypter) getNonce(size int) []byte {
@@ -47,28 +45,24 @@ func (e *Encrypter) getNonce(size int) []byte {
 }
 
 type Decrypter struct {
-	k string
+	keySetter
 }
 
 func NewDecrypter() *Decrypter {
 	return &Decrypter{}
 }
 
-func (d *Decrypter) SetKey(k string) {
-	d.k = k
-}
-
 func (d *Decrypter) Decrypt(data []byte) ([]byte, error) {
-	const op = "decrypter.Decrypt"
+	const op = "Decrypter.Decrypt"
 
-	key, err := makeKey(d.k)
+	key, err := makeKey(d.Key)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	aead, err := makeAEAD(key)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	nonce, payload := data[:aead.NonceSize()], data[aead.NonceSize():]
@@ -78,6 +72,14 @@ func (d *Decrypter) Decrypt(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return decData, nil
+}
+
+type keySetter struct {
+	Key string
+}
+
+func (s *keySetter) SetKey(key string) {
+	s.Key = key
 }
 
 func makeAEAD(key []byte) (cipher.AEAD, error) {

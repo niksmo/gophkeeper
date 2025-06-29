@@ -84,7 +84,7 @@ func TestAddService(t *testing.T) {
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
-		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
+		st.encrypter.On(Encrypt, encodedData).Return(encryptedData, nil)
 		st.repo.On(
 			Create, st.ctx, obj.Name, encryptedData,
 		).Return(expected, repoAddErr)
@@ -104,7 +104,7 @@ func TestAddService(t *testing.T) {
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
-		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
+		st.encrypter.On(Encrypt, encodedData).Return(encryptedData, nil)
 		st.repo.On(
 			Create, st.ctx, obj.Name, encryptedData,
 		).Return(expected, repoAddErr)
@@ -124,7 +124,7 @@ func TestAddService(t *testing.T) {
 
 		st.encoder.On(Encode, obj).Return(encodedData, encodeErr)
 		st.encrypter.On(SetKey, key)
-		st.encrypter.On(Encrypt, encodedData).Return(encryptedData)
+		st.encrypter.On(Encrypt, encodedData).Return(encryptedData, nil)
 		st.repo.On(
 			Create, st.ctx, obj.Name, encryptedData,
 		).Return(expected, repoAddErr)

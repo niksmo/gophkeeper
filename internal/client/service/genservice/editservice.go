@@ -50,7 +50,11 @@ func (s *EditService[T]) Edit(
 	}
 
 	s.encrypter.SetKey(key)
-	data := s.encrypter.Encrypt(b)
+	data, err := s.encrypter.Encrypt(b)
+	if err != nil {
+		log.Debug().Err(err).Msg("failed to encrypt")
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
 	if err = s.r.Update(ctx, entryNum, name, data); err != nil {
 		if errors.Is(err, repository.ErrAlreadyExists) {

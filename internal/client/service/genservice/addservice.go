@@ -50,7 +50,11 @@ func (s *AddService[T]) Add(
 	}
 
 	s.encrypter.SetKey(key)
-	data := s.encrypter.Encrypt(b)
+	data, err := s.encrypter.Encrypt(b)
+	if err != nil {
+		log.Debug().Err(err).Msg("failed to encrypt")
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
 
 	entryNum, err := s.r.Create(ctx, name, data)
 	if err != nil {

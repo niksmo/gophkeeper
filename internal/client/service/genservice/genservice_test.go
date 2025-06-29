@@ -19,7 +19,7 @@ func (e *encrypter) SetKey(k string) {
 	e.Called(k)
 }
 
-func (e *encrypter) Encrypt(data []byte) []byte {
+func (e *encrypter) Encrypt(data []byte) ([]byte, error) {
 	args := e.Called(data)
-	return args.Get(0).([]byte)
+	return args.Get(0).([]byte), args.Error(1)
 }
