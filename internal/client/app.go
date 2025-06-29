@@ -81,6 +81,14 @@ func (a *App) Run(ctx context.Context) {
 	if err := a.cmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
+	a.stop()
+}
+
+func (a *App) stop() {
+	a.log.Debug().Msg("stopping gracefully")
+	a.conn.Close()
+	a.storage.Close()
+	a.log.Debug().Msg("stopped")
 }
 
 func (a *App) initGRPCConn() {
@@ -215,7 +223,6 @@ func (a *App) getTextCommand() *command.Command {
 }
 
 func (a *App) getSyncCommand() *command.Command {
-
 	authClient := authservice.NewGRPCAuthClient(
 		a.log, authbp.NewAuthClient(a.conn), a.authTimeout,
 	)
