@@ -263,8 +263,23 @@ func (a *App) getAuthSubCommands(
 
 func (a *App) initSyncWorkers() []syncservice.SyncWorker {
 	usersDataClient := usersdatapb.NewUsersDataClient(a.conn)
+
+	pwdSyncR := repository.NewPwdSync(a.log, a.storage)
+	pwdClient := syncservice.NewGRPCSyncClientPwd(a.log, usersDataClient)
+
 	textSyncR := repository.NewTextSync(a.log, a.storage)
 	textClient := syncservice.NewGRPCSyncClientText(a.log, usersDataClient)
-	textWorker := syncservice.NewWorker(a.log, textSyncR, textClient)
-	return []syncservice.SyncWorker{textWorker}
+
+	cardSyncR := repository.NewCardSync(a.log, a.storage)
+	cardClient := syncservice.NewGRPCSyncClientCard(a.log, usersDataClient)
+
+	binSyncR := repository.NewBinSync(a.log, a.storage)
+	binClient := syncservice.NewGRPCSyncClientBin(a.log, usersDataClient)
+
+	return []syncservice.SyncWorker{
+		syncservice.NewWorker(a.log, pwdSyncR, pwdClient),
+		syncservice.NewWorker(a.log, textSyncR, textClient),
+		syncservice.NewWorker(a.log, cardSyncR, cardClient),
+		syncservice.NewWorker(a.log, binSyncR, binClient),
+	}
 }
