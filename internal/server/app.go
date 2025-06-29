@@ -28,7 +28,8 @@ func New(config *config.Config) *App {
 	app.initLogger()
 	app.initStorage()
 	app.initGRPCServer()
-	app.registerServices()
+	app.registerAuthService()
+	app.registerUsersDataService()
 	return app
 }
 
@@ -63,7 +64,7 @@ func (a *App) initGRPCServer() {
 	).Send()
 }
 
-func (a *App) registerServices() {
+func (a *App) registerAuthService() {
 	cryptoHasher := hasher.NewCryptoHasher(a.config.HashCost)
 	userTP := tokenservice.NewUsersTokenProvider(
 		a.logger, a.config.TokenSecret, a.config.TokenTTL,
@@ -80,7 +81,9 @@ func (a *App) registerServices() {
 	)
 	api.RegisterAuthAPI(a.logger, a.gRPCServer, authS)
 	a.logger.Info().Str("register", "AuthService").Send()
+}
 
+func (a *App) registerUsersDataService() {
 	usersDataR := repository.NewUsersDataRepository(a.logger, a.storage)
 	usersDataS := usersdataservice.New(a.logger, usersDataR)
 
