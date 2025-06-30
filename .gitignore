@@ -1,0 +1,3 @@
+.vscode
+*.db
+test.server.config.yaml
